@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES5", "ES6", "ES2018"],                // Ou uma versão mais recente do ECMAScript
+    "module": "commonjs",            // Especificando que o módulo é ESM
+    "moduleResolution": "node",    // Usar a resolução de módulo do Node.js
+    "esModuleInterop": true,       // Permitir interoperabilidade com módulos CommonJS
+    "skipLibCheck": true,          // Ignorar verificação de tipo de bibliotecas
+    "forceConsistentCasingInFileNames": true, // Garantir consistência na maiúscula/minúscula de arquivos
+    "outDir": "./dist",            // Saída de arquivos compilados
+    "allowJs": true,               // Permitir arquivos .js
+    "resolveJsonModule": true,     // Permitir importação de arquivos JSON
+    "strict": true,
+    "noEmit": true,                 // Habilitar todas as verificações de tipo estritas
+    "allowImportingTsExtensions": true
+  },
+  "include": ["src/**/*"],         // Incluir todos os arquivos no diretório 'src'
+  "exclude": ["node_modules", "./dist"],      // Excluir 'node_modules'
+  "ts-node": {
+    "files": true
+  }
+}
