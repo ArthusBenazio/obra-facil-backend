@@ -29,15 +29,41 @@ export const authService = {
       throw new BadRequestError("E-mail ou senha inválidos.");
     }
 
-    return new User(
-      user.id,
-      user.name,
-      user.email,
-      user.password_hash,
-      user.subscription_plan,
-      user.role
-    );
+    if (user.user_type === "business" ) {
+      return new User(
+        user.id,
+        user.name,
+        user.phone,
+        user.email,
+        user.password_hash,
+        user.cpf,
+        user.subscription_plan,
+        user.role,
+        user.user_type,
+        user.companyName ?? "",
+        user.cnpj ?? "",
+        user.positionCompany ?? ""
+      );
+    } else if (user.user_type === "person") {
+      return new User(
+        user.id,
+        user.name,
+        user.phone,
+        user.email,
+        user.password_hash,
+        user.cpf,
+        user.subscription_plan,
+        user.role,
+        user.user_type,
+        "",  
+        "",
+        ""
+      );
+     } else {
+      throw new BadRequestError("Tipo de usuário inválido ou não encontrado.");
+    }
   },
+
 
   generateToken(user: User, server: FastifyInstance) {
     const token = server.jwt.sign(

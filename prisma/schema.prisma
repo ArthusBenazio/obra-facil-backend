@@ -7,11 +7,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum SubscriptionPlan {
+  free
+  basic
+  premium
+}
+
+enum Role {
+  admin
+  team
+  client
+}
+
 model User {
-  id                String @id @unique @default(uuid())
-  name              String @db.VarChar(100)
-  email             String @unique
-  password_hash     String @db.VarChar(255)
-  subscription_plan String @default("basic") @db.VarChar(50)
-  role              String @default("standart") @db.VarChar(50)
+  id                String           @id @default(uuid())
+  name              String
+  phone             String
+  email             String           @unique
+  password_hash     String
+  cpf               String
+  subscription_plan SubscriptionPlan
+  role              Role
+  user_type         String
+
+  companyName     String?
+  cnpj            String?
+  positionCompany String?
 }

@@ -8,7 +8,6 @@ export const errorHandler = (
   reply: FastifyReply
 ) => {
   if (error instanceof ZodError) {
-    // Tratamento para erros de validação do Zod
     const validationErrors = error.errors.map((e) => ({
       field: e.path.join('.'),
       validation: e.code,
@@ -19,12 +18,10 @@ export const errorHandler = (
       errors: validationErrors,
     });
   } else if (error instanceof BadRequestError) {
-    // Tratamento para erros personalizados
     reply.status(error.statusCode ?? 400).send({ message: error.message });
   } else {
-    // Tratamento genérico para outros erros
     reply.status(500).send({ message: 'Erro interno do servidor' });
   }
 
-  console.error(error); // Exibe o erro no console
+  console.error(error); 
 };
