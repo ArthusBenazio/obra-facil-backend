@@ -12,9 +12,11 @@ export default async function authController(server: FastifyInstance) {
     const userResponse: UserResponse = {
       id: user.id,
       name: user.name,
+      phone: user.phone,
       email: user.email,
       subscriptionPlan: user.subscriptionPlan,
       role: user.role,
+      userType: user.userType
     };
 
     return reply.send({ token, user: userResponse });
