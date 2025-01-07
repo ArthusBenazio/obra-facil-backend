@@ -1,10 +1,10 @@
 export class User {
   id: string;
   name: string;
-  phone: string;
   email: string;
-  passwordHash: string;
+  phone: string;
   cpf: string;
+  passwordHash: string;
   subscriptionPlan: string;
   role: string;
   userType: "person" | "business";

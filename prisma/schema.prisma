@@ -7,30 +7,224 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum SubscriptionPlan {
-  free
-  basic
-  premium
+// Model definitions
+
+model User {
+  id               String           @id @default(uuid())
+  name             String
+  email            String           @unique
+  phone            String
+  password         String
+  cpf              String
+  role             UserRole
+  user_type        UserType
+  subscriptionPlan SubscriptionPlan
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
+
+  // Relations
+  companies       Company[]
+  projectsCreated Project[]     @relation("ProjectCreatedBy")
+  projectUsers    ProjectUser[]
 }
 
-enum Role {
+model Company {
+  id              String   @id @default(uuid())
+  user_id         String
+  companyName     String
+  cnpj            String
+  positionCompany String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  user        User         @relation(fields: [user_id], references: [id])
+  projects    Project[]
+  invitations Invitation[]
+}
+
+model Project {
+  id                 String   @id @default(uuid())
+  name               String
+  description        String
+  company_id         String?
+  created_by_user_id String
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  // Relations
+  company          Company?          @relation(fields: [company_id], references: [id])
+  createdBy        User              @relation("ProjectCreatedBy", fields: [created_by_user_id], references: [id])
+  projectUsers     ProjectUser[]
+  constructionLogs ConstructionLog[]
+  employees        Employee[]
+  equipment        Equipment[]
+  invitations      Invitation[]      @relation("ProjectInvitation")
+}
+
+model ProjectUser {
+  id         String   @id @default(uuid())
+  project_id String
+  user_id    String
+  role       UserRole
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  project Project @relation(fields: [project_id], references: [id])
+  user    User    @relation(fields: [user_id], references: [id])
+}
+
+model Invitation {
+  id         String           @id @default(uuid())
+  email      String
+  company_id String?
+  project_id String?
+  role       UserRole
+  token      String
+  status     InvitationStatus
+  created_at DateTime         @default(now())
+  expires_at DateTime
+
+  // Relations
+  company Company? @relation(fields: [company_id], references: [id])
+  project Project? @relation("ProjectInvitation", fields: [project_id], references: [id])
+}
+
+model ConstructionLog {
+  id         String   @id @default(uuid())
+  date       DateTime
+  project_id String
+  weather    Json
+  tasks      String
+  comments   String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  project     Project                   @relation(fields: [project_id], references: [id])
+  occurrences Occurrence[]
+  services    Service[]
+  attachments Attachment[]
+  employees   ConstructionLogEmployee[]
+}
+
+model Occurrence {
+  id                  String   @id @default(uuid())
+  construction_log_id String
+  type                String
+  description         String
+  employee_id         String
+  created_at          DateTime @default(now())
+
+  // Relations
+  constructionLog     ConstructionLog      @relation(fields: [construction_log_id], references: [id])
+  employee            Employee             @relation(fields: [employee_id], references: [id])
+  occurrenceEmployees OccurrenceEmployee[]
+}
+
+model Service {
+  id               String   @id @default(uuid())
+  description      String
+  value            Float
+  construction_log String
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  // Relations
+  constructionLog ConstructionLog @relation(fields: [construction_log], references: [id])
+}
+
+model Employee {
+  id         String   @id @default(uuid())
+  name       String
+  role       String
+  daily_rate Float
+  project_id String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  project                  Project                   @relation(fields: [project_id], references: [id])
+  occurrences              Occurrence[]
+  constructionLogEmployees ConstructionLogEmployee[]
+  occurrenceEmployees      OccurrenceEmployee[]
+}
+
+model Equipment {
+  id         String   @id @default(uuid())
+  name       String
+  quantity   Int
+  project_id String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  project Project @relation(fields: [project_id], references: [id])
+}
+
+model Attachment {
+  id                  String         @id @default(uuid())
+  construction_log_id String
+  url                 String
+  type                AttachmentType
+  created_at          DateTime       @default(now())
+
+  // Relations
+  constructionLog ConstructionLog @relation(fields: [construction_log_id], references: [id])
+}
+
+model ConstructionLogEmployee {
+  id                  String   @id @default(uuid())
+  construction_log_id String
+  employee_id         String
+  tasks               String
+  hours_worked        Float
+  created_at          DateTime @default(now())
+
+  // Relations
+  constructionLog ConstructionLog @relation(fields: [construction_log_id], references: [id])
+  employee        Employee        @relation(fields: [employee_id], references: [id])
+}
+
+model OccurrenceEmployee {
+  id            String   @id @default(uuid())
+  occurrence_id String
+  employee_id   String
+  role          String
+  created_at    DateTime @default(now())
+
+  // Relations
+  occurrence Occurrence @relation(fields: [occurrence_id], references: [id])
+  employee   Employee   @relation(fields: [employee_id], references: [id])
+}
+
+// Enum definitions
+enum UserRole {
   admin
   team
   client
 }
 
-model User {
-  id                String           @id @default(uuid())
-  name              String
-  phone             String
-  email             String           @unique
-  password_hash     String
-  cpf               String
-  subscription_plan SubscriptionPlan
-  role              Role
-  user_type         String
+enum UserType {
+  person
+  business
+}
 
-  companyName     String?
-  cnpj            String?
-  positionCompany String?
+enum SubscriptionPlan {
+  free
+  basic
+  premium
+  premium_plus
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum AttachmentType {
+  photo
+  document
 }
