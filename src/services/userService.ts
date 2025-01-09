@@ -3,36 +3,8 @@ import { prisma } from "../lib/prisma";
 import { z } from "zod";
 import { BadRequestError } from "../helpers/api-erros";
 import { User } from "../entities/user";
-
-export const registerSchema = z
-  .object({
-    name: z
-      .string()
-      .min(3, "Nome deve ter pelo menos 3 caracteres"),
-    email: z.string().email("E-mail inválido").min(9),
-    phone: z.string().min(11, "Telefone deve constar DDD e ter no minímo 11 caracteres"),
-    password: z
-      .string()
-      .min(6, "Senha deve ter pelo menos 6 caracteres"),
-    subscriptionPlan: z.enum(["free", "basic", "premium"]),
-    role: z.enum(["admin", "team", "client"]),
-    userType: z.enum(["person", "business"]),
-    cpf: z.string(),
-    companyName: z.string().optional(),
-    cnpj: z.string().optional(),
-    positionCompany: z.string().optional(),
-  })
-  .refine(
-    (data) =>
-      data.userType === "business"
-        ? !!data.companyName && !!data.cnpj && !!data.positionCompany
-        : true,
-    {
-      message:
-        'Campos companyName, cnpj e positionCompany são obrigatórios para usuários do tipo "business".',
-      path: ["userType"], 
-    }
-  );
+import { UserResponse } from "../types/userTypes";
+import { registerSchema } from "../schemas/userSchemas";
 
   export const usersService = {
     async registerUser(body: z.infer<typeof registerSchema>) {
@@ -48,6 +20,12 @@ export const registerSchema = z
   
       const userType = body.userType === "person" || body.userType === "business" ? body.userType : "person"; 
 
+      if (body.userType === "business") {
+        if (!body.companyName || !body.cnpj || !body.positionCompany) {
+          throw new BadRequestError("Campos companyName, cnpj e positionCompany são obrigatórios para usuários do tipo 'business'.");
+        }
+      }
+
       const newUser = await prisma.user.create({
         data: {
           name: body.name,
@@ -58,11 +36,34 @@ export const registerSchema = z
           subscription_plan: body.subscriptionPlan,
           role: body.role,
           user_type: userType,
-          companyName: body.userType === "business" ? body.companyName : undefined, 
-          cnpj: body.userType === "business" ? body.cnpj : undefined, 
-          positionCompany: body.userType === "business" ? body.positionCompany : undefined, 
         },
       });
+
+      if (body.userType === "business") {
+        const company = await prisma.company.create({
+          data: {
+            user_id: newUser.id,
+            company_name: body.companyName!,
+            cnpj: body.cnpj!,
+            position_company: body.positionCompany!,
+          },
+        });
+
+        return {
+          ...new User(
+            newUser.id,
+            newUser.name,
+            newUser.phone,
+            newUser.email,
+            newUser.password_hash,
+            newUser.cpf,
+            newUser.subscription_plan,
+            newUser.role,
+            newUser.user_type as "person" | "business"
+          ),
+          company,
+        };
+      }
   
       return new User(
         newUser.id,
@@ -73,15 +74,37 @@ export const registerSchema = z
         newUser.cpf,
         newUser.subscription_plan,
         newUser.role,
-        newUser.user_type as "person" | "business",
-        newUser.companyName ?? "",
-        newUser.cnpj ?? "",
-        newUser.positionCompany ?? ""
+        newUser.user_type as "person" | "business"
       );
     },
   
     async getAllUsers() {
-      const users = await prisma.user.findMany();
-      return users;
+      const users = await prisma.user.findMany(
+        {
+          include : {
+            companies: true,
+          },
+        }
+      );
+      return users.map((user) => {
+        const userResponse: UserResponse & { company?: any } = {
+          id: user.id,
+          name: user.name,
+          phone: user.phone,
+          email: user.email,
+          subscriptionPlan: user.subscription_plan,  
+          role: user.role,
+          userType: user.user_type,  
+          cpf: user.cpf,
+        };
+  
+        
+        if (user.companies && user.companies.length > 0) {
+          userResponse.company = user.companies[0];  
+        }
+  
+        return userResponse;
+      });
+  
     },
 };

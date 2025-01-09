@@ -8,9 +8,8 @@ export class User {
   subscriptionPlan: string;
   role: string;
   userType: "person" | "business";
-  companyName: string;
-  cnpj: string;
-  positionCompany: string;
+  
+  
 
   constructor(
     id: string,
@@ -22,9 +21,6 @@ export class User {
     subscriptionPlan: string,
     role: string,
     userType: "person" | "business",
-    companyName: string,
-    cnpj: string,
-    positionCompany: string
   ) {
     this.id = id;
     this.name = name;
@@ -35,8 +31,5 @@ export class User {
     this.subscriptionPlan = subscriptionPlan;
     this.role = role;
     this.userType = userType;
-    this.companyName = companyName;
-    this.cnpj = cnpj;
-    this.positionCompany = positionCompany;
   }
 }
