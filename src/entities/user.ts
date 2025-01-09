@@ -8,6 +8,7 @@ export class User {
   subscriptionPlan: string;
   role: string;
   userType: "person" | "business";
+  companyId?: string | null 
   
   
 
@@ -21,6 +22,7 @@ export class User {
     subscriptionPlan: string,
     role: string,
     userType: "person" | "business",
+    companyId?: string | null
   ) {
     this.id = id;
     this.name = name;
@@ -31,5 +33,6 @@ export class User {
     this.subscriptionPlan = subscriptionPlan;
     this.role = role;
     this.userType = userType;
+    this.companyId = companyId
   }
 }
