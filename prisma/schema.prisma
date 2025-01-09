@@ -9,41 +9,41 @@ datasource db {
 
 // Model definitions
 
-model User {
-  id               String           @id @default(uuid())
-  name             String
-  email            String           @unique
-  phone            String
-  password         String
-  cpf              String
-  role             UserRole
-  user_type        UserType
-  subscriptionPlan SubscriptionPlan
-  created_at       DateTime         @default(now())
-  updated_at       DateTime         @updatedAt
+model user {
+  id                String            @id @default(uuid())
+  name              String
+  email             String            @unique
+  phone             String
+  password_hash     String
+  cpf               String
+  role              user_role
+  user_type         user_type
+  subscription_plan subscription_plan
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
 
   // Relations
-  companies       Company[]
-  projectsCreated Project[]     @relation("ProjectCreatedBy")
-  projectUsers    ProjectUser[]
+  companies        company[]
+  projects_created project[]      @relation("ProjectCreatedBy")
+  project_users    project_user[]
 }
 
-model Company {
-  id              String   @id @default(uuid())
-  user_id         String
-  companyName     String
-  cnpj            String
-  positionCompany String
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+model company {
+  id               String   @id @default(uuid())
+  user_id          String
+  company_name     String
+  cnpj             String
+  position_company String
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
 
   // Relations
-  user        User         @relation(fields: [user_id], references: [id])
-  projects    Project[]
-  invitations Invitation[]
+  user        user         @relation(fields: [user_id], references: [id])
+  projects    project[]
+  invitations invitation[]
 }
 
-model Project {
+model project {
   id                 String   @id @default(uuid())
   name               String
   description        String
@@ -53,45 +53,45 @@ model Project {
   updated_at         DateTime @updatedAt
 
   // Relations
-  company          Company?          @relation(fields: [company_id], references: [id])
-  createdBy        User              @relation("ProjectCreatedBy", fields: [created_by_user_id], references: [id])
-  projectUsers     ProjectUser[]
-  constructionLogs ConstructionLog[]
-  employees        Employee[]
-  equipment        Equipment[]
-  invitations      Invitation[]      @relation("ProjectInvitation")
+  company           company?           @relation(fields: [company_id], references: [id])
+  created_by        user               @relation("ProjectCreatedBy", fields: [created_by_user_id], references: [id])
+  project_users     project_user[]
+  construction_logs construction_log[]
+  employees         employee[]
+  equipment         equipment[]
+  invitations       invitation[]       @relation("ProjectInvitation")
 }
 
-model ProjectUser {
-  id         String   @id @default(uuid())
+model project_user {
+  id         String    @id @default(uuid())
   project_id String
   user_id    String
-  role       UserRole
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  role       user_role
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
 
   // Relations
-  project Project @relation(fields: [project_id], references: [id])
-  user    User    @relation(fields: [user_id], references: [id])
+  project project @relation(fields: [project_id], references: [id])
+  user    user    @relation(fields: [user_id], references: [id])
 }
 
-model Invitation {
-  id         String           @id @default(uuid())
+model invitation {
+  id         String            @id @default(uuid())
   email      String
   company_id String?
   project_id String?
-  role       UserRole
+  role       user_role
   token      String
-  status     InvitationStatus
-  created_at DateTime         @default(now())
+  status     invitation_status
+  created_at DateTime          @default(now())
   expires_at DateTime
 
   // Relations
-  company Company? @relation(fields: [company_id], references: [id])
-  project Project? @relation("ProjectInvitation", fields: [project_id], references: [id])
+  company company? @relation(fields: [company_id], references: [id])
+  project project? @relation("ProjectInvitation", fields: [project_id], references: [id])
 }
 
-model ConstructionLog {
+model construction_log {
   id         String   @id @default(uuid())
   date       DateTime
   project_id String
@@ -102,14 +102,14 @@ model ConstructionLog {
   updated_at DateTime @updatedAt
 
   // Relations
-  project     Project                   @relation(fields: [project_id], references: [id])
-  occurrences Occurrence[]
-  services    Service[]
-  attachments Attachment[]
-  employees   ConstructionLogEmployee[]
+  project     project                     @relation(fields: [project_id], references: [id])
+  occurrences occurrence[]
+  services    service[]
+  attachments attachment[]
+  employees   construction_log_employee[]
 }
 
-model Occurrence {
+model occurrence {
   id                  String   @id @default(uuid())
   construction_log_id String
   type                String
@@ -118,24 +118,24 @@ model Occurrence {
   created_at          DateTime @default(now())
 
   // Relations
-  constructionLog     ConstructionLog      @relation(fields: [construction_log_id], references: [id])
-  employee            Employee             @relation(fields: [employee_id], references: [id])
-  occurrenceEmployees OccurrenceEmployee[]
+  construction_log     construction_log      @relation(fields: [construction_log_id], references: [id])
+  employee             employee              @relation(fields: [employee_id], references: [id])
+  occurrence_employees occurrence_employee[]
 }
 
-model Service {
-  id               String   @id @default(uuid())
-  description      String
-  value            Float
-  construction_log String
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+model service {
+  id                  String   @id @default(uuid())
+  description         String
+  value               Float
+  construction_log_id String
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
 
   // Relations
-  constructionLog ConstructionLog @relation(fields: [construction_log], references: [id])
+  construction_log construction_log @relation(fields: [construction_log_id], references: [id])
 }
 
-model Employee {
+model employee {
   id         String   @id @default(uuid())
   name       String
   role       String
@@ -145,13 +145,13 @@ model Employee {
   updated_at DateTime @updatedAt
 
   // Relations
-  project                  Project                   @relation(fields: [project_id], references: [id])
-  occurrences              Occurrence[]
-  constructionLogEmployees ConstructionLogEmployee[]
-  occurrenceEmployees      OccurrenceEmployee[]
+  project                    project                     @relation(fields: [project_id], references: [id])
+  occurrences                occurrence[]
+  construction_log_employees construction_log_employee[]
+  occurrence_employees       occurrence_employee[]
 }
 
-model Equipment {
+model equipment {
   id         String   @id @default(uuid())
   name       String
   quantity   Int
@@ -160,21 +160,21 @@ model Equipment {
   updated_at DateTime @updatedAt
 
   // Relations
-  project Project @relation(fields: [project_id], references: [id])
+  project project @relation(fields: [project_id], references: [id])
 }
 
-model Attachment {
-  id                  String         @id @default(uuid())
+model attachment {
+  id                  String          @id @default(uuid())
   construction_log_id String
   url                 String
-  type                AttachmentType
-  created_at          DateTime       @default(now())
+  type                attachment_type
+  created_at          DateTime        @default(now())
 
   // Relations
-  constructionLog ConstructionLog @relation(fields: [construction_log_id], references: [id])
+  construction_log construction_log @relation(fields: [construction_log_id], references: [id])
 }
 
-model ConstructionLogEmployee {
+model construction_log_employee {
   id                  String   @id @default(uuid())
   construction_log_id String
   employee_id         String
@@ -183,11 +183,11 @@ model ConstructionLogEmployee {
   created_at          DateTime @default(now())
 
   // Relations
-  constructionLog ConstructionLog @relation(fields: [construction_log_id], references: [id])
-  employee        Employee        @relation(fields: [employee_id], references: [id])
+  construction_log construction_log @relation(fields: [construction_log_id], references: [id])
+  employee         employee         @relation(fields: [employee_id], references: [id])
 }
 
-model OccurrenceEmployee {
+model occurrence_employee {
   id            String   @id @default(uuid())
   occurrence_id String
   employee_id   String
@@ -195,36 +195,36 @@ model OccurrenceEmployee {
   created_at    DateTime @default(now())
 
   // Relations
-  occurrence Occurrence @relation(fields: [occurrence_id], references: [id])
-  employee   Employee   @relation(fields: [employee_id], references: [id])
+  occurrence occurrence @relation(fields: [occurrence_id], references: [id])
+  employee   employee   @relation(fields: [employee_id], references: [id])
 }
 
 // Enum definitions
-enum UserRole {
+enum user_role {
   admin
   team
   client
 }
 
-enum UserType {
+enum user_type {
   person
   business
 }
 
-enum SubscriptionPlan {
+enum subscription_plan {
   free
   basic
   premium
   premium_plus
 }
 
-enum InvitationStatus {
+enum invitation_status {
   PENDING
   ACCEPTED
   DECLINED
 }
 
-enum AttachmentType {
+enum attachment_type {
   photo
   document
 }
