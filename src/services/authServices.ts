@@ -40,9 +40,6 @@ export const authService = {
         user.subscription_plan,
         user.role,
         user.user_type,
-        user.companyName ?? "",
-        user.cnpj ?? "",
-        user.positionCompany ?? ""
       );
     } else if (user.user_type === "person") {
       return new User(
@@ -55,9 +52,6 @@ export const authService = {
         user.subscription_plan,
         user.role,
         user.user_type,
-        "",  
-        "",
-        ""
       );
      } else {
       throw new BadRequestError("Tipo de usuário inválido ou não encontrado.");
