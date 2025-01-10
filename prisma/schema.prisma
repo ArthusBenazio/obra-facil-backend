@@ -47,6 +47,15 @@ model project {
   id                 String   @id @default(uuid())
   name               String
   description        String
+  responsible        String
+  engineer           String?
+  crea_number        String?
+  start_date         DateTime
+  expected_end_date  DateTime
+  status             String
+  address            String
+  estimated_budget   Float?
+  client             String
   company_id         String?
   created_by_user_id String
   created_at         DateTime @default(now())
