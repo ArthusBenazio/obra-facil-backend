@@ -10,8 +10,6 @@ export class User {
   userType: "person" | "business";
   companyId?: string | null 
   
-  
-
   constructor(
     id: string,
     name: string,

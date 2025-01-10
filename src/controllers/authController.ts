@@ -10,6 +10,7 @@ export default async function authController(server: FastifyTypedInstance) {
       response: {
         200: LoginResponseSchema,
       },
+      tags: ["Auth"],
     }
   }, async (request, reply) => {
     const body = loginSchema.parse(request.body);  
@@ -26,6 +27,7 @@ export default async function authController(server: FastifyTypedInstance) {
       role: user.role,
       userType: user.userType,
       cpf: user.cpf,
+      companyId: user.companyId
     };
 
     return reply.send({ token, user: userResponse });
