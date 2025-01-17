@@ -2,12 +2,13 @@ import { z } from "zod";
 import { UnauthorizedError } from "../helpers/api-erros";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import {
+  ProjectResponse,
   projectResponseSchema,
   projectSchema,
 } from "../schemas/projectSchemas";
-import { FastifyTypedInstance } from "../utils/fastifyTypedInstance";
 import { parse } from "date-fns";
 import { projectService } from "../services/projectService";
+import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 
 interface User {
   userId: string;
@@ -91,7 +92,12 @@ export function projectController(server: FastifyTypedInstance) {
         companyId ?? ""
       );
 
-      reply.status(200).send(projects);
+      const formattedProjects = projects.map((project) => ({
+        ...project,
+        status: project.status as ProjectResponse["status"],
+      }));
+
+      reply.status(200).send(formattedProjects);
     }
   );
 
@@ -115,7 +121,11 @@ export function projectController(server: FastifyTypedInstance) {
         throw new UnauthorizedError("Usuário não autenticado.");
       }
 
-      const project = await projectService.getProjectById(id, user.userId);
+      const project = await projectService.getProjectById(
+        id,
+        user.userId,
+        user.companyId ?? null
+      );
 
       reply.status(200).send(project);
     }
@@ -167,6 +177,32 @@ export function projectController(server: FastifyTypedInstance) {
       });
 
       reply.status(200).send(projectResponseSchema.parse(updatedProject));
+    }
+  );
+
+  server.delete<{ Params: { id: string } }>(
+    "/obras/:id",
+    {
+      preHandler: [authMiddleware],
+      schema: {
+        description: "Deleta uma obra por id",
+        tags: ["Obras"],
+        response: {
+          200: z.string()
+        }
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const user = request.user as User;
+
+      if (!user) {
+        throw new UnauthorizedError("Usuário não autenticado.");
+      }
+
+      const deletedProject = await projectService.deleteProject(id);
+
+      reply.status(200).send("Projeto deletado com sucesso!");
     }
   );
 }

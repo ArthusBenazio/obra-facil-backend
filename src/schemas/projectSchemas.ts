@@ -15,12 +15,23 @@ export const projectSchema = z.object({
   start_date: z
     .string()
     .nonempty("A data de início é obrigatória.")
-    .refine(validateBrazilianDate, { message: "A data de início deve ser válida." }),
+    .refine(validateBrazilianDate, {
+      message: "A data de início deve ser válida.",
+    }),
   expected_end_date: z
     .string()
     .nonempty("A previsão de término é obrigatória.")
-    .refine(validateBrazilianDate, { message: "A previsão de término deve ser válida." }),
-  status: z.string().nonempty("O status é obrigatório."),
+    .refine(validateBrazilianDate, {
+      message: "A previsão de término deve ser válida.",
+    }),
+  status: z.enum([
+    "nao_iniciado",
+    "iniciando",
+    "em_andamento",
+    "concluido",
+    "cancelado",
+    "em_espera",
+  ]),
   address: z.string().nonempty("O endereço é obrigatório."),
   estimated_budget: z.number().optional(),
   client: z.string().nonempty("O cliente é obrigatório."),
@@ -35,7 +46,14 @@ export const projectResponseSchema = z.object({
   crea_number: z.string().optional(),
   start_date: z.date(),
   expected_end_date: z.date(),
-  status: z.string(),
+  status: z.enum([
+    "nao_iniciado",
+    "iniciando",
+    "em_andamento",
+    "concluido",
+    "cancelado",
+    "em_espera",
+  ]),
   address: z.string(),
   estimated_budget: z.number().optional(),
   created_by_user_id: z.string(),
@@ -46,4 +64,3 @@ export const projectResponseSchema = z.object({
 });
 
 export type ProjectResponse = z.infer<typeof projectResponseSchema>;
-
