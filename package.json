@@ -4,7 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "dev": "nodemon --exec tsx src/server.ts",
     "prisma:migrate": "npx prisma migrate dev --name init",
     "prisma:generate": "npx prisma generate",
@@ -30,7 +30,9 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/jest": "^29.5.14",
     "@types/node": "^22.9.0",
+    "jest": "^29.7.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
