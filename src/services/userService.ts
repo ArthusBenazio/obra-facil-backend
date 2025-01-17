@@ -107,4 +107,91 @@ import { registerSchema } from "../schemas/userSchemas";
       });
   
     },
+
+    async getUserById(id: string) {
+      const user = await prisma.user.findUnique({
+        where: { id },
+        include: {
+          companies: true,
+        },
+      });
+  
+      if (!user) {
+        throw new BadRequestError("Usuário não encontrado.");
+      }
+  
+      const userResponse: UserResponse & { company?: any } = {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+        subscriptionPlan: user.subscription_plan,  
+        role: user.role,
+        userType: user.user_type,  
+        cpf: user.cpf,
+      };
+  
+      if (user.companies && user.companies.length > 0) {
+        userResponse.company = user.companies[0];  
+      }
+  
+      return userResponse;
+    },
+
+    async updateUser(id: string, body: Partial<z.infer<typeof registerSchema>>) {
+      const user = await prisma.user.findUnique({
+        where: { id },
+      });
+    
+      if (!user) {
+        throw new BadRequestError("Usuário não encontrado.");
+      }
+    
+      const updatedData: any = {
+        name: body.name,
+        email: body.email,
+        phone: body.phone,
+        cpf: body.cpf,
+        subscription_plan: body.subscriptionPlan,
+        role: body.role,
+        user_type: body.userType,
+      };
+    
+      if (body.password) {
+        updatedData.password_hash = await bcrypt.hash(body.password, 10);
+      }
+    
+      const updatedUser = await prisma.user.update({
+        where: { id },
+        data: updatedData,
+        include: {
+          companies: {
+            select: {
+              company_name: true,
+              cnpj: true,
+              position_company: true,
+            },
+          },
+        },
+      });
+      
+      
+      return {
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        subscriptionPlan: updatedUser.subscription_plan,
+        role: updatedUser.role,
+        userType: updatedUser.user_type,
+        cpf: updatedUser.cpf,
+        companies: updatedUser.companies.map((company) => ({
+          companyName: company.company_name,
+          cnpj: company.cnpj,
+          positionCompany: company.position_company,
+        })),
+      };
+      
+    }
+    
 };

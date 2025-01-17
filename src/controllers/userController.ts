@@ -5,19 +5,27 @@ import { FastifyTypedInstance } from "../utils/fastifyTypedInstance";
 import {
   registerResponseSchema,
   registerSchema,
+  updateSchema,
   userResponseSchema,
 } from "../schemas/userSchemas";
 import { z } from "zod";
+import { authMiddleware } from "../middlewares/authMiddleware";
+import { FastifyRequest } from "fastify";
+
+interface ProfileParams {
+  id: string;
+}
 
 export default async function userController(server: FastifyTypedInstance) {
   server.post(
-    "/register",
+    "/cadastrar",
     {
       schema: {
         body: registerSchema,
         response: {
           201: registerResponseSchema,
         },
+        description: "Cria um novo usuário.",
         tags: ["User"],
       },
     },
@@ -54,7 +62,7 @@ export default async function userController(server: FastifyTypedInstance) {
   );
 
   server.get(
-    "/profile",
+    "/profiles",
     {
       schema: {
         description: "Lista todos os usuários registrados.",
@@ -70,4 +78,49 @@ export default async function userController(server: FastifyTypedInstance) {
       return reply.status(200).send(users);
     }
   );
+
+  server.get<{
+    Params: ProfileParams;
+  }>(
+    "/profile/:id",
+    {
+      preHandler: [authMiddleware],
+      schema: {
+        description: "Lista informações do usuário.",
+        tags: ["User"],
+        response: {
+          200: userResponseSchema,
+        },
+      },
+    },
+    async (request: FastifyRequest<{ Params: ProfileParams }>, reply) => {
+      const users = await usersService.getUserById(request.params.id);
+
+      return reply.status(200).send(users);
+    }
+  );
+
+  server.put(
+    "/profile/:id",
+    {
+      preHandler: [authMiddleware],
+      schema: {
+        body: updateSchema,
+        response: {
+          200: userResponseSchema,
+        },
+        description: "Atualiza informações do usuário.",
+        tags: ["User"],
+      },
+    },
+    async (request: FastifyRequest<{ Params: ProfileParams }>, reply) => {
+      
+      const body = updateSchema.parse(request.body);
+  
+      const updatedUser = await usersService.updateUser(request.params.id, body);
+  
+      return reply.status(200).send(updatedUser);
+    }
+  );
+  
 }
