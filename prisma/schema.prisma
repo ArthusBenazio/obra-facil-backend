@@ -44,7 +44,7 @@ model company {
 }
 
 model project {
-  id                 String   @id @default(uuid())
+  id                 String         @id @default(uuid())
   name               String
   description        String
   responsible        String
@@ -52,14 +52,14 @@ model project {
   crea_number        String?
   start_date         DateTime
   expected_end_date  DateTime
-  status             String
+  status             project_status
   address            String
   estimated_budget   Float?
   client             String
   company_id         String?
   created_by_user_id String
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
+  created_at         DateTime       @default(now())
+  updated_at         DateTime       @updatedAt
 
   // Relations
   company           company?           @relation(fields: [company_id], references: [id])
@@ -145,13 +145,16 @@ model service {
 }
 
 model employee {
-  id         String   @id @default(uuid())
+  id         String          @id @default(uuid())
   name       String
   role       String
   daily_rate Float
+  status     employee_status
   project_id String
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  user_id    String?
+  company_id String?
+  created_at DateTime        @default(now())
+  updated_at DateTime        @updatedAt
 
   // Relations
   project                    project                     @relation(fields: [project_id], references: [id])
@@ -236,4 +239,18 @@ enum invitation_status {
 enum attachment_type {
   photo
   document
+}
+
+enum project_status {
+  nao_iniciado
+  iniciando
+  em_andamento
+  concluido
+  cancelado
+  em_espera
+}
+
+enum employee_status {
+  ativo
+  inativo
 }
