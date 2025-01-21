@@ -17,7 +17,7 @@ interface User {
 
 export function projectController(server: FastifyTypedInstance) {
   server.post(
-    "/obras",
+    "/project",
     {
       preHandler: [authMiddleware],
       schema: {
@@ -60,14 +60,12 @@ export function projectController(server: FastifyTypedInstance) {
         company_id: user.companyId || null,
       });
 
-      console.log("newProject", newProject);
-
       reply.status(201).send(projectResponseSchema.parse(newProject));
     }
   );
 
   server.get(
-    "/obras",
+    "/projects",
     {
       preHandler: [authMiddleware],
       schema: {
@@ -102,7 +100,7 @@ export function projectController(server: FastifyTypedInstance) {
   );
 
   server.get<{ Params: { id: string } }>(
-    "/obras/:id",
+    "/project/:id",
     {
       preHandler: [authMiddleware],
       schema: {
@@ -132,7 +130,7 @@ export function projectController(server: FastifyTypedInstance) {
   );
 
   server.put<{ Params: { id: string } }>(
-    "/obras/:id",
+    "/project/:id",
     {
       preHandler: [authMiddleware],
       schema: {
@@ -181,7 +179,7 @@ export function projectController(server: FastifyTypedInstance) {
   );
 
   server.delete<{ Params: { id: string } }>(
-    "/obras/:id",
+    "/project/:id",
     {
       preHandler: [authMiddleware],
       schema: {

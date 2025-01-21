@@ -1,7 +1,7 @@
 import { UserResponse } from "../types/userTypes";
 import { authService, loginSchema } from "../services/authServices";
 import { LoginResponseSchema } from "../schemas/authSchemas";
-import { FastifyTypedInstance } from "../utils/fastifyTypedInstance";
+import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 
 export default async function authController(server: FastifyTypedInstance) {
   server.post("/login", {
