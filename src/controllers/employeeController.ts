@@ -18,7 +18,7 @@ export default async function employeeController(server: FastifyTypedInstance) {
         response: {
           201: employeeResponseSchema,
         },
-        tags: ["Funcionário"],
+        tags: ["Funcionários"],
       },
     },
     async (request, reply) => {
@@ -45,7 +45,7 @@ export default async function employeeController(server: FastifyTypedInstance) {
         response: {
           200: employeeResponseSchema.array(),
         },
-        tags: ["Funcionário"],
+        tags: ["Funcionários"],
       },
     },
     async (request, reply) => {
@@ -69,7 +69,7 @@ export default async function employeeController(server: FastifyTypedInstance) {
         response: {
           200: employeeResponseSchema,
         },
-        tags: ["Funcionário"],
+        tags: ["Funcionários"],
       },
     },
     async (request, reply) => {
@@ -95,7 +95,7 @@ export default async function employeeController(server: FastifyTypedInstance) {
         response: {
           200: employeeResponseSchema,
         },
-        tags: ["Funcionário"],
+        tags: ["Funcionários"],
       },
     },
     async (request, reply) => {
@@ -121,7 +121,7 @@ export default async function employeeController(server: FastifyTypedInstance) {
         response: {
           200: employeeResponseSchema,
         },
-        tags: ["Funcionário"],
+        tags: ["Funcionários"],
       },
     },
     async (request, reply) => {
