@@ -16,7 +16,7 @@ interface ProfileParams {
   id: string;
 }
 
-export default async function userController(server: FastifyTypedInstance) {
+export async function userController(server: FastifyTypedInstance) {
   server.post(
     "/profile",
     {
