@@ -1,4 +1,4 @@
-import { User } from "../entities/user";
+import { User as BaseUser } from "../entities/user";
 import { UnauthorizedError } from "../helpers/api-erros";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import {
@@ -8,7 +8,12 @@ import {
 import { employeeService } from "../services/employeeService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 
-export default async function employeeController(server: FastifyTypedInstance) {
+interface User extends BaseUser {
+  userId: string;
+  companyId?: string | null;
+}
+
+export async function employeeController(server: FastifyTypedInstance) {
   server.post(
     "/employee",
     {
@@ -31,6 +36,8 @@ export default async function employeeController(server: FastifyTypedInstance) {
       const body = registerEmployeeSchema.parse(request.body);
       const employee = await employeeService.createEmployee({
         ...body,
+        user_id: user.companyId ? null : user.userId,
+        company_id: user.companyId || null,
       });
       const employeeResponse = employeeResponseSchema.parse(employee);
       return reply.status(201).send(employeeResponse);
