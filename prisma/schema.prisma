@@ -131,17 +131,18 @@ model occurrence {
   construction_log_id String
   type                String
   description         String
-  employee_id         String
+  employee_id         String?
   created_at          DateTime @default(now())
 
   // Relations
   construction_log     construction_log      @relation(fields: [construction_log_id], references: [id])
-  employee             employee              @relation(fields: [employee_id], references: [id])
+  employee             employee?             @relation(fields: [employee_id], references: [id])
   occurrence_employees occurrence_employee[]
 }
 
 model service {
   id                  String   @id @default(uuid())
+  name                String
   description         String
   value               Float
   construction_log_id String
