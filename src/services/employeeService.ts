@@ -1,4 +1,3 @@
-import { get } from "http";
 import { Employee } from "../entities/employee";
 import { User } from "../entities/user";
 import { prisma } from "../lib/prisma";
@@ -6,12 +5,15 @@ import { prisma } from "../lib/prisma";
 export const employeeService = {
   async createEmployee(data: {
     name: string;
+    phone: string;
     role: string;
     daily_rate: number;
     status: "ativo" | "inativo";
-    project_id: string;
+    cpf: string;
+    pix_key: string;
     user_id?: string | null;
     company_id?: string | null;
+
   }): Promise<Employee> {
     return prisma.employee.create({
       data,

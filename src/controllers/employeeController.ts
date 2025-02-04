@@ -8,7 +8,7 @@ import {
 import { employeeService } from "../services/employeeService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 
-export default async function employeeController(server: FastifyTypedInstance) {
+export async function employeeController(server: FastifyTypedInstance) {
   server.post(
     "/employee",
     {
