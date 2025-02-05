@@ -44,7 +44,7 @@ model company {
 }
 
 model project {
-  id                 String   @id @default(uuid())
+  id                 String         @id @default(uuid())
   name               String
   description        String
   responsible        String
@@ -52,21 +52,20 @@ model project {
   crea_number        String?
   start_date         DateTime
   expected_end_date  DateTime
-  status             String
+  status             project_status
   address            String
   estimated_budget   Float?
   client             String
   company_id         String?
   created_by_user_id String
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
+  created_at         DateTime       @default(now())
+  updated_at         DateTime       @updatedAt
 
   // Relations
   company           company?           @relation(fields: [company_id], references: [id])
   created_by        user               @relation("ProjectCreatedBy", fields: [created_by_user_id], references: [id])
   project_users     project_user[]
   construction_logs construction_log[]
-  employees         employee[]
   equipment         equipment[]
   invitations       invitation[]       @relation("ProjectInvitation")
 }
@@ -104,7 +103,6 @@ model construction_log {
   id         String   @id @default(uuid())
   date       DateTime
   project_id String
-  weather    Json
   tasks      String
   comments   String
   created_at DateTime @default(now())
@@ -112,10 +110,20 @@ model construction_log {
 
   // Relations
   project     project                     @relation(fields: [project_id], references: [id])
+  weathers    weather[]
   occurrences occurrence[]
   services    service[]
   attachments attachment[]
   employees   construction_log_employee[]
+}
+
+model weather {
+  id                  String           @id @default(cuid())
+  period              Period
+  climate             Climate
+  condition           Condition
+  construction_log_id String
+  construction_log    construction_log @relation(fields: [construction_log_id], references: [id])
 }
 
 model occurrence {
@@ -123,17 +131,18 @@ model occurrence {
   construction_log_id String
   type                String
   description         String
-  employee_id         String
+  employee_id         String?
   created_at          DateTime @default(now())
 
   // Relations
   construction_log     construction_log      @relation(fields: [construction_log_id], references: [id])
-  employee             employee              @relation(fields: [employee_id], references: [id])
+  employee             employee?             @relation(fields: [employee_id], references: [id])
   occurrence_employees occurrence_employee[]
 }
 
 model service {
   id                  String   @id @default(uuid())
+  name                String
   description         String
   value               Float
   construction_log_id String
@@ -145,16 +154,20 @@ model service {
 }
 
 model employee {
-  id         String   @id @default(uuid())
+  id         String          @id @default(uuid())
   name       String
+  phone      String
+  cpf        String
+  pix_key    String
   role       String
   daily_rate Float
-  project_id String
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  status     employee_status
+  user_id    String?
+  company_id String?
+  created_at DateTime        @default(now())
+  updated_at DateTime        @updatedAt
 
   // Relations
-  project                    project                     @relation(fields: [project_id], references: [id])
   occurrences                occurrence[]
   construction_log_employees construction_log_employee[]
   occurrence_employees       occurrence_employee[]
@@ -228,12 +241,44 @@ enum subscription_plan {
 }
 
 enum invitation_status {
-  PENDING
-  ACCEPTED
-  DECLINED
+  pending
+  accepted
+  declined
 }
 
 enum attachment_type {
   photo
   document
+}
+
+enum project_status {
+  nao_iniciado
+  iniciando
+  em_andamento
+  concluido
+  cancelado
+  em_espera
+}
+
+enum employee_status {
+  ativo
+  inativo
+}
+
+enum Period {
+  manha
+  tarde
+  noite
+}
+
+enum Climate {
+  ensolarado
+  nublado
+  chuvoso
+  tempestade
+}
+
+enum Condition {
+  praticavel
+  impraticavel
 }

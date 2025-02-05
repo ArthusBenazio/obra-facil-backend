@@ -1,7 +1,6 @@
 import { usersService } from "../services/userService";
 import { UserResponse } from "../types/userTypes";
 import { BadRequestError } from "../helpers/api-erros";
-import { FastifyTypedInstance } from "../utils/fastifyTypedInstance";
 import {
   registerResponseSchema,
   registerSchema,
@@ -11,14 +10,15 @@ import {
 import { z } from "zod";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { FastifyRequest } from "fastify";
+import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 
 interface ProfileParams {
   id: string;
 }
 
-export default async function userController(server: FastifyTypedInstance) {
+export async function userController(server: FastifyTypedInstance) {
   server.post(
-    "/cadastrar",
+    "/profile",
     {
       schema: {
         body: registerSchema,
