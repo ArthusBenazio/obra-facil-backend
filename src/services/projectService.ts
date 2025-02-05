@@ -26,8 +26,8 @@ export const projectService = {
     address: string;
     estimated_budget?: number;
     client: string;
-    created_by_user_id: string;
-    company_id: string | null;
+    user_id: string;
+    company_id?: string | null;
   }): Promise<Project> {
     return prisma.project.create({
       data,
@@ -37,7 +37,7 @@ export const projectService = {
   async getAllProjects(userId: string, companyId: string): Promise<Projects[]> {
     const projects = await prisma.project.findMany({
       where: {
-        OR: [{ company_id: companyId }, { created_by_user_id: userId }],
+        OR: [{ company_id: companyId }, { user_id: userId }],
       },
     });
 
@@ -67,7 +67,7 @@ export const projectService = {
         project.address,
         project.client,
         project.company_id ?? "",
-        project.created_by_user_id,
+        project.user_id,
         project.created_at,
         project.updated_at,
         project.engineer ?? "",
@@ -85,7 +85,7 @@ export const projectService = {
     const project = await prisma.project.findFirst({
       where: {
         id,
-        OR: [{ company_id: companyId }, { created_by_user_id: userId }],
+        OR: [{ company_id: companyId }, { user_id: userId }],
       },
     });
 
@@ -105,7 +105,7 @@ export const projectService = {
       project.address,
       project.client,
       project.company_id ?? "",
-      project.created_by_user_id,
+      project.user_id,
       project.created_at,
       project.updated_at,
       project.engineer ?? "",
@@ -146,7 +146,7 @@ export const projectService = {
     });
 
     if (!project) {
-      throw new Error(`Project with id ${id} not found`);
+      throw new Error(`Projeto com o id ${id} não encontrado.`);
     }
 
     return new Projects(
@@ -166,7 +166,7 @@ export const projectService = {
       project.address,
       project.client,
       project.company_id ?? "",
-      project.created_by_user_id,
+      project.user_id,
       project.created_at,
       project.updated_at,
       project.engineer ?? "",

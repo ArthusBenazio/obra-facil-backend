@@ -2,6 +2,7 @@ import { User } from "../entities/user";
 import { UnauthorizedError } from "../helpers/api-erros";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import {
+  deleteEmployeeResponseSchema,
   employeeResponseSchema,
   registerEmployeeSchema,
 } from "../schemas/employeeSchema";
@@ -32,6 +33,8 @@ export async function employeeController(server: FastifyTypedInstance) {
       const body = registerEmployeeSchema.parse(request.body);
       const employee = await employeeService.createEmployee({
         ...body,
+        user_id: user.id, 
+        company_id: user.companyId || null,
       });
       const employeeResponse = employeeResponseSchema.parse(employee);
       return reply.status(201).send(employeeResponse);
@@ -53,17 +56,17 @@ export async function employeeController(server: FastifyTypedInstance) {
     async (request, reply) => {
       const user = request.user as User;
 
-    if (!user) {
-      throw new UnauthorizedError("Usuário não autenticado.");
-    }
+      if (!user) {
+        throw new UnauthorizedError("Usuário não autenticado.");
+      }
 
-      const employees = await employeeService.getEmployees(user);
+      const employees = await employeeService.getAllEmployees(user);
       const employeesResponse = employeeResponseSchema.array().parse(employees);
       return reply.status(200).send(employeesResponse);
     }
   );
 
-  server.get<{ Params: { id: string }}>(
+  server.get<{ Params: { id: string } }>(
     "/employee/:id",
     {
       preHandler: [authMiddleware],
@@ -89,7 +92,7 @@ export async function employeeController(server: FastifyTypedInstance) {
     }
   );
 
-  server.put<{ Params: { id: string }}>(
+  server.put<{ Params: { id: string } }>(
     "/employee/:id",
     {
       preHandler: [authMiddleware],
@@ -117,13 +120,13 @@ export async function employeeController(server: FastifyTypedInstance) {
     }
   );
 
-  server.delete<{ Params: { id: string }}>(
+  server.delete<{ Params: { id: string } }>(
     "/employee/:id",
     {
       preHandler: [authMiddleware],
       schema: {
         response: {
-          200: employeeResponseSchema,
+          200: deleteEmployeeResponseSchema,
         },
         tags: ["Funcionários"],
         description: "Deleta um funcionário",

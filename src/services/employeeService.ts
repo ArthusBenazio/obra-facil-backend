@@ -20,7 +20,7 @@ export const employeeService = {
     });
   },
 
-  async getEmployees(user: User): Promise<Employee[]> {
+  async getAllEmployees(user: User): Promise<Employee[]> {
     if (user.companyId) {
       return prisma.employee.findMany({
         where: {

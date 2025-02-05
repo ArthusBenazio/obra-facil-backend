@@ -9,13 +9,7 @@ export const registerEmployeeSchema = z
     status: z.enum(["ativo", "inativo"]),
     cpf: z.string().min(11, "CPF deve ter pelo menos 11 caracteres"),
     pix_key: z.string().min(11, "Chave PIX deve ter pelo menos 11 caracteres"),
-    user_id: z.string().uuid().optional(),
-    company_id: z.string().uuid().optional(),
   })
-  .refine(
-    (data) => data.user_id || data.company_id,
-    { message: "O funcionário deve estar associado a um usuário ou uma empresa" }
-  );
 
   export const employeeResponseSchema = z.object({
     id: z.string(),
@@ -26,8 +20,12 @@ export const registerEmployeeSchema = z
     status: z.enum(["ativo", "inativo"]),
     cpf: z.string(),
     pix_key: z.string(),
-    user_id: z.string().optional(),
+    user_id: z.string().optional().nullable(),
     company_id: z.string().optional().nullable(),
     created_at: z.date(),
     updated_at: z.date(),
+  });
+
+  export const deleteEmployeeResponseSchema = z.object({
+    message: z.string(),
   });
