@@ -26,6 +26,7 @@ export function projectController(server: FastifyTypedInstance) {
           201: projectResponseSchema,
         },
         tags: ["Obras"],
+        description: "Cria uma nova obra",
       },
     },
     async (request, reply) => {
@@ -139,6 +140,7 @@ export function projectController(server: FastifyTypedInstance) {
           200: projectResponseSchema,
         },
         tags: ["Obras"],
+        description: "Atualiza uma obra",
       },
     },
     async (request, reply) => {

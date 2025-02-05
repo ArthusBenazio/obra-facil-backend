@@ -21,6 +21,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
           201: constructionLogResponseSchema,
         },
         tags: ["Diary"],
+        description: "Cria um novo diário de obra",
       },
     },
     async (request, reply) => {
@@ -61,6 +62,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
           200: constructionLogResponseSchema.array(),
         },
         tags: ["Diary"],
+        description: "Retorna todos os diários de obra",
       },
     },
     async (request, reply) => {
@@ -79,6 +81,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
           200: constructionLogResponseSchema,
         },
         tags: ["Diary"],
+        description: "Retorna um diário de obra",
       },
     },
     async (request, reply) => {
@@ -99,6 +102,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
           200: constructionLogResponseSchema, 
         },
         tags: ["Diary"],
+        description: "Atualiza um diário de obra",
       },
     },
     async (request, reply) => {
