@@ -20,6 +20,7 @@ export async function userController(server: FastifyTypedInstance) {
   server.post(
     "/profile",
     {
+      preHandler: [authMiddleware],
       schema: {
         body: registerSchema,
         response: {
@@ -46,8 +47,8 @@ export async function userController(server: FastifyTypedInstance) {
         email: newUser.email,
         subscriptionPlan: newUser.subscriptionPlan,
         role: newUser.role,
-        userType: newUser.userType,
-      };
+        userType: newUser.userType,        
+      };   
 
       if (newUser.userType === "business" && "company" in newUser) {
         userResponse.company = {

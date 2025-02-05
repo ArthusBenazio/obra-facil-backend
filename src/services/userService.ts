@@ -141,6 +141,9 @@ import { registerSchema } from "../schemas/userSchemas";
     async updateUser(id: string, body: Partial<z.infer<typeof registerSchema>>) {
       const user = await prisma.user.findUnique({
         where: { id },
+        include: {
+          companies: true,
+        }
       });
     
       if (!user) {
@@ -165,17 +168,38 @@ import { registerSchema } from "../schemas/userSchemas";
         where: { id },
         data: updatedData,
         include: {
-          companies: {
-            select: {
-              company_name: true,
-              cnpj: true,
-              position_company: true,
-            },
-          },
+          companies: true
         },
       });
       
-      
+      let updatedCompany = null;
+
+      if (body.userType === "business") {
+        if (!body.companyName || !body.cnpj || !body.positionCompany) {
+          throw new BadRequestError("Campos companyName, cnpj e positionCompany são obrigatórios para usuários do tipo 'business'.");
+        }
+
+        if (user.companies && user.companies.length > 0) {
+          updatedCompany = await prisma.company.update({
+            where: { id: user.companies[0].id },
+            data: {
+              company_name: body.companyName,
+              cnpj: body.cnpj,
+              position_company: body.positionCompany,
+            },
+          });
+        } else {
+          updatedCompany = await prisma.company.create({
+            data: {
+              user_id: id,
+              company_name: body.companyName,
+              cnpj: body.cnpj,
+              position_company: body.positionCompany,
+            },
+          });
+        }
+      }
+
       return {
         id: updatedUser.id,
         name: updatedUser.name,
@@ -185,11 +209,14 @@ import { registerSchema } from "../schemas/userSchemas";
         role: updatedUser.role,
         userType: updatedUser.user_type,
         cpf: updatedUser.cpf,
-        companies: updatedUser.companies.map((company) => ({
-          companyName: company.company_name,
-          cnpj: company.cnpj,
-          positionCompany: company.position_company,
-        })),
+        company: updatedCompany
+          ? {
+            id: updatedCompany.id,
+            user_id: updatedCompany.user_id,
+            company_name: updatedCompany.company_name,
+            cnpj: updatedCompany.cnpj,
+            position_company: updatedCompany.position_company,
+          } : null
       };
       
     }

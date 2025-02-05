@@ -29,7 +29,16 @@ export const registerSchema = baseSchema.refine(
   }
 );
 
-export const updateSchema = baseSchema.partial();
+export const updateSchema = baseSchema.partial().refine(
+  (data) =>
+    data.userType !== "business" ||
+    (data.companyName && data.cnpj && data.positionCompany),
+  {
+    message: 'Campos companyName, cnpj e positionCompany são obrigatórios para usuários do tipo "business".',
+    path: ["userType"],
+  }
+);
+
 
 export const registerResponseSchema = z.object({
   id: z.string(),
@@ -65,9 +74,8 @@ export const userResponseSchema = z
         company_name: z.string(),
         cnpj: z.string(),
         position_company: z.string(),
-        created_at: z.date(),
-        updated_at: z.date(),
       })
+      .nullable()
       .optional()
   })
   .refine(
