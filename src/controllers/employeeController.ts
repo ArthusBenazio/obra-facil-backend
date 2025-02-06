@@ -1,3 +1,4 @@
+import { user } from './../../node_modules/.prisma/client/index.d';
 import { User } from "../entities/user";
 import { UnauthorizedError } from "../helpers/api-erros";
 import { authMiddleware } from "../middlewares/authMiddleware";
@@ -10,6 +11,11 @@ import { employeeService } from "../services/employeeService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 
 export async function employeeController(server: FastifyTypedInstance) {
+
+  interface AuthenticatedUser extends User {
+    userId: string;
+  }
+
   server.post(
     "/employee",
     {
@@ -24,7 +30,9 @@ export async function employeeController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-      const user = request.user as User;
+      const user = request.user as AuthenticatedUser;
+
+      console.log("Usuário autenticado:", user);
 
       if (!user) {
         throw new UnauthorizedError("Usuário não autenticado.");
@@ -33,9 +41,10 @@ export async function employeeController(server: FastifyTypedInstance) {
       const body = registerEmployeeSchema.parse(request.body);
       const employee = await employeeService.createEmployee({
         ...body,
-        user_id: user.id, 
         company_id: user.companyId || null,
+        user_id: user.companyId ? null : user.userId,
       });
+
       const employeeResponse = employeeResponseSchema.parse(employee);
       return reply.status(201).send(employeeResponse);
     }
