@@ -20,7 +20,6 @@ export async function userController(server: FastifyTypedInstance) {
   server.post(
     "/profile",
     {
-      preHandler: [authMiddleware],
       schema: {
         body: registerSchema,
         response: {
