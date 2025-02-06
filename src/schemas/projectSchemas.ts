@@ -56,7 +56,7 @@ export const projectResponseSchema = z.object({
   ]),
   address: z.string(),
   estimated_budget: z.number().optional(),
-  created_by_user_id: z.string(),
+  user_id: z.string(),
   company_id: z.string().optional().nullable(),
   client: z.string(),
   created_at: z.date(),
