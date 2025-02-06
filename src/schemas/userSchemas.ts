@@ -70,7 +70,6 @@ export const userResponseSchema = z
     company: z
       .object({
         id: z.string(),
-        user_id: z.string(),
         company_name: z.string(),
         cnpj: z.string(),
         position_company: z.string(),

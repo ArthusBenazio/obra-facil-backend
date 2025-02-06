@@ -134,7 +134,7 @@ export const projectService = {
       address: string;
       estimated_budget?: number;
       client: string;
-      created_by_user_id: string;
+      user_id: string;
       company_id: string | null;
     }
   ): Promise<Projects> {
