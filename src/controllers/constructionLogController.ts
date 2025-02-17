@@ -1,5 +1,5 @@
 import { User } from "../entities/user";
-import { UnauthorizedError } from "../helpers/api-erros";
+import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import {
   constructionLogResponseSchema,
@@ -9,6 +9,8 @@ import {
 import { parse } from "date-fns";
 import { ConstructionLogService } from "../services/constructionLogService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
+import { z } from "zod";
+import { AuthenticatedUser } from "../types/authenticatedUser";
 
 export async function constructionLogController(server: FastifyTypedInstance) {
   server.post(
@@ -41,11 +43,15 @@ export async function constructionLogController(server: FastifyTypedInstance) {
           date: bodyDate,
           project_id: body.project_id,
           tasks: body.tasks,
-          comments: body.comments,
+          comments: body.comments ?? undefined,
           weathers: body.weathers,
-          occurrences: body.occurrences,
+          occurrences: body.occurrences?.map((occurrence) => ({
+            ...occurrence,
+            employee_id: occurrence.employee_id ?? undefined,
+          })),
           services: body.services,
           employees: body.employees,
+          equipment_usage: body.equipment_usage,
         });
       const constructionLogResponse =
         constructionLogResponseSchema.parse(newConstructionLog);
@@ -53,21 +59,46 @@ export async function constructionLogController(server: FastifyTypedInstance) {
     }
   );
 
+  const getConstructionLogQuerySchema = z.object({
+    project_id: z.string(),
+  });
+
   server.get(
     "/construction-log",
     {
       preHandler: [authMiddleware],
       schema: {
+        querystring: getConstructionLogQuerySchema,
         response: {
           200: constructionLogResponseSchema.array(),
         },
         tags: ["Diary"],
-        description: "Retorna todos os diários de obra",
+        description: "Retorna os diários de uma obra específica",
       },
     },
     async (request, reply) => {
-      const constructionLogs = await ConstructionLogService.getAllConstructionLogs();
-      const constructionLogResponse = constructionLogResponseSchema.array().parse(constructionLogs);
+      const user = request.user as AuthenticatedUser;
+      const { project_id } = request.query as { project_id: string };
+
+      console.log("user", user);
+
+      if (!user) {
+        throw new UnauthorizedError("Usuário não autenticado.");
+      }
+
+      if (!project_id) {
+        throw new BadRequestError("O ID do projeto é obrigatório.");
+      }
+
+      const constructionLogs =
+        await ConstructionLogService.getAllConstructionLogs(
+          user.userId,
+          project_id
+        );
+        console.log(user.userId, project_id, constructionLogs);
+      const constructionLogResponse = constructionLogResponseSchema
+        .array()
+        .parse(constructionLogs);
       return reply.status(200).send(constructionLogResponse);
     }
   );
@@ -86,8 +117,10 @@ export async function constructionLogController(server: FastifyTypedInstance) {
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      const constructionLog = await ConstructionLogService.getConstructionLogById(id);
-      const constructionLogResponse = constructionLogResponseSchema.parse(constructionLog);
+      const constructionLog =
+        await ConstructionLogService.getConstructionLogById(id);
+      const constructionLogResponse =
+        constructionLogResponseSchema.parse(constructionLog);
       return reply.status(200).send(constructionLogResponse);
     }
   );
@@ -99,7 +132,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
       schema: {
         body: updateLogSchema,
         response: {
-          200: constructionLogResponseSchema, 
+          200: constructionLogResponseSchema,
         },
         tags: ["Diary"],
         description: "Atualiza um diário de obra",
@@ -107,7 +140,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
     },
     async (request, reply) => {
       const user = request.user as User;
-      const { id } = request.params as { id: string }; 
+      const { id } = request.params as { id: string };
       if (!user) {
         throw new UnauthorizedError("Usuário não autenticado.");
       }
@@ -115,14 +148,18 @@ export async function constructionLogController(server: FastifyTypedInstance) {
       const body = updateLogSchema.parse(request.body);
       console.log("Parsed Body for Update:", body);
 
-      const updatedConstructionLog = await ConstructionLogService.updateConstructionLog(id, {
-        ...body,
-        date: body.date ? parse(body.date, "dd/MM/yyyy", new Date()) : undefined,
-      });
+      const updatedConstructionLog =
+        await ConstructionLogService.updateConstructionLog(id, {
+          ...body,
+          date: body.date
+            ? parse(body.date, "dd/MM/yyyy", new Date())
+            : undefined,
+        });
 
-      const constructionLogResponse = constructionLogResponseSchema.parse(updatedConstructionLog);
+      const constructionLogResponse = constructionLogResponseSchema.parse(
+        updatedConstructionLog
+      );
       return reply.status(200).send(constructionLogResponse);
     }
   );
-  
 }
