@@ -5,8 +5,8 @@ export class User {
   phone: string;
   cpf: string;
   passwordHash: string;
-  subscriptionPlan: string;
-  role: string;
+  subscriptionPlan: "free" | "basic" | "premium" | "premium_plus";
+  role: "admin" | "team" | "client";
   userType: "person" | "business";
   companyId?: string | null 
   
@@ -17,8 +17,8 @@ export class User {
     email: string,
     passwordHash: string,
     cpf: string,
-    subscriptionPlan: string,
-    role: string,
+    subscriptionPlan: "free" | "basic" | "premium" | "premium_plus",
+    role: "admin" | "team" | "client",
     userType: "person" | "business",
     companyId?: string | null
   ) {

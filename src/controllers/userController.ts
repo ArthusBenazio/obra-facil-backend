@@ -31,7 +31,6 @@ export async function userController(server: FastifyTypedInstance) {
     },
     async (request, reply) => {
       const body = registerSchema.parse(request.body);
-
       const newUser = await usersService.registerUser(body);
 
       if (!newUser) {

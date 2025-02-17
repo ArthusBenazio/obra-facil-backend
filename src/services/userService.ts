@@ -18,10 +18,16 @@ export const usersService = {
 
     const hashedPassword = await bcrypt.hash(body.password, 10);
 
-    const userType =
-      body.userType === "person" || body.userType === "business"
-        ? body.userType
-        : "person";
+    const userData = {
+      name: body.name,
+      email: body.email,
+      phone: body.phone,
+      password_hash: hashedPassword,
+      cpf: body.cpf,
+      subscription_plan: body.subscriptionPlan,
+      role: body.role,
+      user_type: body.userType,
+    };
 
     if (body.userType === "business") {
       if (!body.companyName || !body.cnpj || !body.positionCompany) {
@@ -29,28 +35,45 @@ export const usersService = {
           "Campos companyName, cnpj e positionCompany são obrigatórios para usuários do tipo 'business'."
         );
       }
-    }
 
-    const newUser = await prisma.user.create({
-      data: {
-        name: body.name,
-        email: body.email,
-        phone: body.phone,
-        password_hash: hashedPassword,
-        cpf: body.cpf,
-        subscription_plan: body.subscriptionPlan,
-        role: body.role,
-        user_type: userType,
-      },
-    });
+      const existingCompany = await prisma.company.findUnique({
+        where: { cnpj: body.cnpj },
+      });
 
-    if (body.userType === "business") {
-      const company = await prisma.company.create({
+      if (existingCompany) {
+        throw new BadRequestError("Empresa já cadastrada com este CNPJ.");
+      }
+
+      const existingCPF = await prisma.user.findUnique({
+        where: { cpf: body.cpf },
+      });
+
+      if (existingCPF) {
+        throw new BadRequestError("CPF já cadastrado.");
+      }
+
+      // Cria o usuário e a empresa
+      const newUser = await prisma.user.create({
+        data: {
+          ...userData,
+          companies: {
+            create: {
+              company_name: body.companyName,
+              cnpj: body.cnpj,
+              position_company: body.positionCompany,
+            },
+          },
+        },
+        include: {
+          companies: true,
+        },
+      });
+
+      await prisma.company_user.create({
         data: {
           user_id: newUser.id,
-          company_name: body.companyName!,
-          cnpj: body.cnpj!,
-          position_company: body.positionCompany!,
+          company_id: newUser.companies[0].id,
+          role: body.role,
         },
       });
 
@@ -66,9 +89,14 @@ export const usersService = {
           newUser.role,
           newUser.user_type as "person" | "business"
         ),
-        company,
+        company: newUser.companies[0],
       };
     }
+
+    // Cria apenas o usuário (tipo "person")
+    const newUser = await prisma.user.create({
+      data: userData,
+    });
 
     return new User(
       newUser.id,
@@ -86,9 +114,14 @@ export const usersService = {
   async getAllUsers() {
     const users = await prisma.user.findMany({
       include: {
-        companies: true,
+        company_user: {
+          include: {
+            company: true,
+          },
+        },
       },
     });
+
     return users.map((user) => {
       const userResponse: UserResponse & { company?: any } = {
         id: user.id,
@@ -101,10 +134,9 @@ export const usersService = {
         cpf: user.cpf,
       };
 
-      if (user.companies && user.companies.length > 0) {
-        userResponse.company = user.companies[0];
+      if (user.company_user && user.company_user.length > 0) {
+        userResponse.company = user.company_user[0].company;
       }
-
       return userResponse;
     });
   },
@@ -113,7 +145,11 @@ export const usersService = {
     const user = await prisma.user.findUnique({
       where: { id },
       include: {
-        companies: true,
+        company_user: {
+          include: {
+            company: true,
+          },
+        },
       },
     });
 
@@ -132,8 +168,8 @@ export const usersService = {
       cpf: user.cpf,
     };
 
-    if (user.companies && user.companies.length > 0) {
-      userResponse.company = user.companies[0];
+    if (user.company_user && user.company_user.length > 0) {
+      userResponse.company = user.company_user[0].company;
     }
 
     return userResponse;
@@ -202,7 +238,7 @@ export const usersService = {
       } else {
         updatedCompany = await prisma.company.create({
           data: {
-            user_id: id,
+            id: id,
             company_name: body.companyName,
             cnpj: body.cnpj,
             position_company: body.positionCompany,
@@ -223,7 +259,7 @@ export const usersService = {
       company: updatedCompany
         ? {
             id: updatedCompany.id,
-            user_id: updatedCompany.user_id,
+            user_id: updatedCompany.id,
             company_name: updatedCompany.company_name,
             cnpj: updatedCompany.cnpj,
             position_company: updatedCompany.position_company,
