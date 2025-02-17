@@ -61,7 +61,7 @@ export const authService = {
         subscriptionPlan: user.subscriptionPlan,
         role: user.role,
       },
-      { expiresIn: "1h" }
+      { expiresIn: "24h" }
     );
     return token;
   },
