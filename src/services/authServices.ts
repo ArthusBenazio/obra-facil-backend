@@ -4,11 +4,13 @@ import { z } from "zod";
 import { FastifyInstance } from "fastify";
 import { User } from "../entities/user";
 import { BadRequestError } from "../helpers/api-erros";
+import { loginSchema } from "../schemas/authSchemas";
 
-export const loginSchema = z.object({
-  email: z.string().email("E-mail inválido").min(1, "E-mail é obrigatório"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-});
+interface UserWithRelations extends User {
+  companyUsers?: { company_id: string }[];
+  projectsAssigned?: { id: string }[];
+  projectAdmins?: { project_id: string }[];
+}
 
 export const authService = {
   async loginUser(body: z.infer<typeof loginSchema>) {
@@ -52,14 +54,16 @@ export const authService = {
     }
   },
 
-  generateToken(user: User, server: FastifyInstance) {
+  generateToken(user: UserWithRelations, server: FastifyInstance) {
     const token = server.jwt.sign(
       {
         userId: user.id,
         email: user.email,
-        companyId: user.companyId || null,
+        companyIds: user.companyUsers?.map((cu) => cu.company_id),
         subscriptionPlan: user.subscriptionPlan,
         role: user.role,
+        assignedProjects: user.projectsAssigned?.map((p) => p.id),
+        projectAdmin: user.projectAdmins?.map((pa) => pa.project_id),
       },
       { expiresIn: "24h" }
     );
