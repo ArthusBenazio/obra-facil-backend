@@ -1,7 +1,9 @@
+import { user } from './../../node_modules/.prisma/client/index.d';
 import { User } from "../entities/user";
 import { UnauthorizedError } from "../helpers/api-erros";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import {
+  deleteEmployeeResponseSchema,
   employeeResponseSchema,
   registerEmployeeSchema,
 } from "../schemas/employeeSchema";
@@ -9,6 +11,11 @@ import { employeeService } from "../services/employeeService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 
 export async function employeeController(server: FastifyTypedInstance) {
+
+  interface AuthenticatedUser extends User {
+    userId: string;
+  }
+
   server.post(
     "/employee",
     {
@@ -19,10 +26,13 @@ export async function employeeController(server: FastifyTypedInstance) {
           201: employeeResponseSchema,
         },
         tags: ["Funcionários"],
+        description: "Cria um novo funcionário",
       },
     },
     async (request, reply) => {
-      const user = request.user as User;
+      const user = request.user as AuthenticatedUser;
+
+      console.log("Usuário autenticado:", user);
 
       if (!user) {
         throw new UnauthorizedError("Usuário não autenticado.");
@@ -31,7 +41,10 @@ export async function employeeController(server: FastifyTypedInstance) {
       const body = registerEmployeeSchema.parse(request.body);
       const employee = await employeeService.createEmployee({
         ...body,
+        company_id: user.companyId || null,
+        user_id: user.companyId ? null : user.userId,
       });
+
       const employeeResponse = employeeResponseSchema.parse(employee);
       return reply.status(201).send(employeeResponse);
     }
@@ -46,22 +59,23 @@ export async function employeeController(server: FastifyTypedInstance) {
           200: employeeResponseSchema.array(),
         },
         tags: ["Funcionários"],
+        description: "Retorna todos os funcionários",
       },
     },
     async (request, reply) => {
       const user = request.user as User;
 
-    if (!user) {
-      throw new UnauthorizedError("Usuário não autenticado.");
-    }
+      if (!user) {
+        throw new UnauthorizedError("Usuário não autenticado.");
+      }
 
-      const employees = await employeeService.getEmployees(user);
+      const employees = await employeeService.getAllEmployees(user);
       const employeesResponse = employeeResponseSchema.array().parse(employees);
       return reply.status(200).send(employeesResponse);
     }
   );
 
-  server.get<{ Params: { id: string }}>(
+  server.get<{ Params: { id: string } }>(
     "/employee/:id",
     {
       preHandler: [authMiddleware],
@@ -70,6 +84,7 @@ export async function employeeController(server: FastifyTypedInstance) {
           200: employeeResponseSchema,
         },
         tags: ["Funcionários"],
+        description: "Retorna um funcionário",
       },
     },
     async (request, reply) => {
@@ -86,7 +101,7 @@ export async function employeeController(server: FastifyTypedInstance) {
     }
   );
 
-  server.put<{ Params: { id: string }}>(
+  server.put<{ Params: { id: string } }>(
     "/employee/:id",
     {
       preHandler: [authMiddleware],
@@ -96,6 +111,7 @@ export async function employeeController(server: FastifyTypedInstance) {
           200: employeeResponseSchema,
         },
         tags: ["Funcionários"],
+        description: "Atualiza um funcionário",
       },
     },
     async (request, reply) => {
@@ -113,15 +129,16 @@ export async function employeeController(server: FastifyTypedInstance) {
     }
   );
 
-  server.delete<{ Params: { id: string }}>(
+  server.delete<{ Params: { id: string } }>(
     "/employee/:id",
     {
       preHandler: [authMiddleware],
       schema: {
         response: {
-          200: employeeResponseSchema,
+          200: deleteEmployeeResponseSchema,
         },
         tags: ["Funcionários"],
+        description: "Deleta um funcionário",
       },
     },
     async (request, reply) => {

@@ -11,6 +11,7 @@ export async function authController(server: FastifyTypedInstance) {
         200: LoginResponseSchema,
       },
       tags: ["Auth"],
+      description: "Autenticação de usuário",
     }
   }, async (request, reply) => {
     const body = loginSchema.parse(request.body);  

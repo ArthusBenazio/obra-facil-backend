@@ -16,7 +16,7 @@ export class Projects {
     public address: string,
     public client: string,
     public company_id: string,
-    public created_by_user_id: string,
+    public user_id: string,
     public created_at: Date,
     public updated_at: Date,
     public engineer?: string,

@@ -1,18 +1,20 @@
 import { prisma } from "../lib/prisma";
 import { ConstructionLog } from "../entities/constructionLog";
-import { BadRequestError } from "../helpers/api-erros";
-import { Climate, Condition, Period } from "@prisma/client";
+import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
+import { attachment_type, Climate, Condition, Period } from "@prisma/client";
 
 export const ConstructionLogService = {
   async createContructionLog(data: {
     date: Date;
     project_id: string;
     tasks: string;
-    comments: string;
+    comments?: string;
     weathers: { period: string; climate: string; condition: string }[];
-    occurrences: { type: string; description: string; employee_id?: string }[];
-    services: { name: string; description: string; value: number }[];
+    occurrences?: { type: string; description: string; employee_id?: string }[];
+    services?: { name: string; description: string; value: number }[];
+    attachments?: { url: string; type: attachment_type }[];
     employees: { hours_worked: number; employee_id: string }[];
+    equipment_usage?: { equipment_id: string; quantity: number }[];
   }): Promise<ConstructionLog> {
     const projectExists = await prisma.project.findUnique({
       where: { id: data.project_id },
@@ -22,60 +24,11 @@ export const ConstructionLogService = {
       throw new BadRequestError("Projeto nao encontrado");
     }
 
-    const occurrencesData = await Promise.all(
-      data.occurrences.map(async (occurrence) => {
-        const occurrenceData: any = {
-          type: occurrence.type,
-          description: occurrence.description,
-        };
-
-        if (occurrence.employee_id) {
-          const employee = await prisma.employee.findUnique({
-            where: { id: occurrence.employee_id },
-            select: { role: true },
-          });
-
-          if (!employee) {
-            throw new BadRequestError(
-              `Funcionário com ID ${occurrence.employee_id} não encontrado`
-            );
-          }
-
-          occurrenceData.employee = { connect: { id: occurrence.employee_id } };
-          occurrenceData.occurrence_employees = {
-            create: [
-              {
-                employee: { connect: { id: occurrence.employee_id } },
-                role: employee.role,
-              },
-            ],
-          };
-        }
-
-        return occurrenceData;
-      })
-    );
-
-    const employeeData = await Promise.all(
-      data.employees.map(async (employee) => {
-        const existingEmployee = await prisma.employee.findUnique({
-          where: { id: employee.employee_id },
-          select: { role: true },
-        });
-
-        if (!existingEmployee) {
-          throw new BadRequestError(
-            `Funcionário com ID ${employee.employee_id} nao encontrado`
-          );
-        }
-
-        return {
-          hours_worked: employee.hours_worked,
-          role: existingEmployee.role,
-          employee: { connect: { id: employee.employee_id } },
-        };
-      })
-    );
+    const occurrencesData = data.occurrences || [];
+    const servicesData = data.services || [];
+    const attachmentsData = data.attachments || [];
+    const employeesData = data.employees || [];
+    const equipmentUsageData = data.equipment_usage || [];
 
     const constructionLog = await prisma.construction_log.create({
       data: {
@@ -91,38 +44,77 @@ export const ConstructionLogService = {
           })),
         },
         occurrences: {
-          create: occurrencesData,
+          create: occurrencesData.map((occurrence) => ({
+            type: occurrence.type,
+            description: occurrence.description,
+            employee_id: occurrence.employee_id || undefined,
+          })),
         },
         services: {
-          create: data.services.map((service) => ({
+          create: servicesData.map((service) => ({
             name: service.name,
             description: service.description,
             value: service.value,
           })),
         },
+        attachments: {
+          create: attachmentsData.map((attachment) => ({
+            url: attachment.url,
+            type: attachment.type,
+          })),
+        },
         employees: {
-          create: employeeData,
+          create: await Promise.all(
+            employeesData.map(async (employee) => {
+              const employeeData = await prisma.employee.findUnique({
+                where: { id: employee.employee_id },
+                select: { role: true },
+              });
+
+              if (!employeeData) {
+                throw new BadRequestError(
+                  `Funcionário com ID ${employee.employee_id} não encontrado`
+                );
+              }
+
+              return {
+                hours_worked: employee.hours_worked,
+                role: employeeData.role,
+                employee: { connect: { id: employee.employee_id } },
+              };
+            })
+          ),
+        },
+        equipment_usage: {
+          create: equipmentUsageData.map((usage) => ({
+            equipment: { connect: { id: usage.equipment_id } },
+            quantity: usage.quantity,
+          })),
         },
       },
       include: {
         weathers: true,
         occurrences: true,
         services: true,
+        attachments: true,
         employees: true,
+        equipment_usage: true,
       },
     });
 
     return constructionLog;
   },
-  
-async getConstructionLogById(id: string): Promise<ConstructionLog> {
+
+  async getConstructionLogById(id: string): Promise<ConstructionLog> {
     const constructionLog = await prisma.construction_log.findUnique({
       where: { id },
       include: {
         weathers: true,
         occurrences: true,
         services: true,
+        attachments: true,
         employees: true,
+        equipment_usage: true,
       },
     });
 
@@ -133,30 +125,72 @@ async getConstructionLogById(id: string): Promise<ConstructionLog> {
     return constructionLog;
   },
 
-  async getAllConstructionLogs(): Promise<ConstructionLog[]> {
+  async getAllConstructionLogs(
+    userId: string,
+    projectId: string
+  ): Promise<ConstructionLog[]> {
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, user_id: true, company_id: true },
+    });
+
+    if (!project) {
+      throw new BadRequestError("Projeto não encontrado.");
+    }
+
+    // Verifica se o usuário tem acesso ao projeto
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, companies: { select: { id: true } } },
+    });
+
+    if (!user) {
+      throw new UnauthorizedError("Usuário não encontrado.");
+    }
+
+    const hasAccess =
+      (project.company_id && project.company_id === user.companies[0].id) ||
+      (!project.company_id && project.user_id === user.id);
+
+    if (!hasAccess) {
+      throw new UnauthorizedError("Você não tem acesso a este projeto.");
+    }
+
+    // Retorna os diários apenas da obra específica
     const constructionLogs = await prisma.construction_log.findMany({
+      where: { project_id: projectId },
       include: {
         weathers: true,
         occurrences: true,
         services: true,
+        attachments: true,
         employees: true,
+        equipment_usage: true,
       },
     });
 
     return constructionLogs;
   },
 
-  async updateConstructionLog(id: string, data: {
-    date?: Date;
-    project_id?: string;
-    tasks?: string;
-    comments?: string;
-    weathers?: { period: string; climate: string; condition: string }[];
-    occurrences?: { type: string; description: string; employee_id?: string }[];
-    services?: { name: string; description: string; value: number }[];
-    employees?: { hours_worked: number; employee_id: string }[];
-  }): Promise<ConstructionLog> {
-
+  async updateConstructionLog(
+    id: string,
+    data: {
+      date?: Date;
+      project_id?: string;
+      tasks?: string;
+      comments?: string | null;
+      weathers?: { period: string; climate: string; condition: string }[];
+      occurrences?: {
+        type: string;
+        description: string;
+        employee_id?: string | null;
+      }[];
+      services?: { name: string; description: string; value: number }[];
+      attachments?: { url: string; type: attachment_type }[];
+      employees?: { hours_worked: number; employee_id: string }[];
+      equipment_usage?: { equipment_id: string; quantity: number }[];
+    }
+  ): Promise<ConstructionLog> {
     const constructionLog = await prisma.construction_log.findUnique({
       where: { id },
     });
@@ -168,59 +202,92 @@ async getConstructionLogById(id: string): Promise<ConstructionLog> {
     const updatedConstructionLog = await prisma.construction_log.update({
       where: { id },
       data: {
-        ...data.date && { date: data.date },
-        ...data.project_id && { project: { connect: { id: data.project_id } } },
-        ...data.tasks && { tasks: data.tasks },
-        ...data.comments && { comments: data.comments },
-        weathers: data.weathers ? {
-          create: data.weathers.map((weather) => ({
-            period: weather.period as Period,
-            climate: weather.climate as Climate,
-            condition: weather.condition as Condition,
-          }))
-        } : undefined,
-        occurrences: data.occurrences ? {
-          create: data.occurrences.map((occurrence) => ({
-            type: occurrence.type,
-            description: occurrence.description,
-            employee_id: occurrence.employee_id ? { connect: { id: occurrence.employee_id } } : undefined,
-          }))
-        } : undefined,
-        services: data.services ? {
-          create: data.services.map((service) => ({
-            name: service.name,
-            description: service.description,
-            value: service.value,
-          }))
-        } : undefined,
-        employees: data.employees ? {
-          create: await Promise.all(data.employees.map(async (employee) => {
-            const existingEmployee = await prisma.employee.findUnique({
-              where: { id: employee.employee_id },
-              select: { role: true }, 
-            });
-
-            if (!existingEmployee) {
-              throw new BadRequestError(`Funcionário com ID ${employee.employee_id} não encontrado`);
+        ...(data.date && { date: data.date }),
+        ...(data.project_id && {
+          project: { connect: { id: data.project_id } },
+        }),
+        ...(data.tasks && { tasks: data.tasks }),
+        ...(data.comments && { comments: data.comments }),
+        weathers: data.weathers
+          ? {
+              create: data.weathers.map((weather) => ({
+                period: weather.period as Period,
+                climate: weather.climate as Climate,
+                condition: weather.condition as Condition,
+              })),
             }
+          : undefined,
+        occurrences: data.occurrences
+          ? {
+              create: data.occurrences.map((occurrence) => ({
+                type: occurrence.type,
+                description: occurrence.description,
+                employee_id: occurrence.employee_id
+                  ? { connect: { id: occurrence.employee_id } }
+                  : undefined,
+              })),
+            }
+          : undefined,
+        services: data.services
+          ? {
+              create: data.services.map((service) => ({
+                name: service.name,
+                description: service.description,
+                value: service.value,
+              })),
+            }
+          : undefined,
+        attachments: data.attachments
+          ? {
+              create: data.attachments.map((attachment) => ({
+                url: attachment.url,
+                type: attachment.type,
+              })),
+            }
+          : undefined,
+        employees: data.employees
+          ? {
+              create: await Promise.all(
+                data.employees.map(async (employee) => {
+                  const existingEmployee = await prisma.employee.findUnique({
+                    where: { id: employee.employee_id },
+                    select: { role: true },
+                  });
 
-            return {
-              hours_worked: employee.hours_worked,
-              role: existingEmployee.role,
-              employee: { connect: { id: employee.employee_id } },
-            };
-          }))
-        } : undefined,
+                  if (!existingEmployee) {
+                    throw new BadRequestError(
+                      `Funcionário com ID ${employee.employee_id} não encontrado`
+                    );
+                  }
+
+                  return {
+                    hours_worked: employee.hours_worked,
+                    role: existingEmployee.role,
+                    employee: { connect: { id: employee.employee_id } },
+                  };
+                })
+              ),
+            }
+          : undefined,
+        equipment_usage: data.equipment_usage
+          ? {
+              create: data.equipment_usage.map((usage) => ({
+                equipment: { connect: { id: usage.equipment_id } },
+                quantity: usage.quantity,
+              })),
+            }
+          : undefined,
       },
       include: {
         weathers: true,
         occurrences: true,
         services: true,
+        attachments: true,
         employees: true,
+        equipment_usage: true,
       },
     });
 
     return updatedConstructionLog;
-  }
-  
+  },
 };

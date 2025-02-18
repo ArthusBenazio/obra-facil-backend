@@ -3,7 +3,9 @@ import { FastifyReply, FastifyRequest } from "fastify";
 
 interface TokenPayload {
   userId: string;
-  companyId?: string; 
+  companyIds: string[];
+  assignedProjects: string[];
+  projectAdmin: string[];
 }
 export async function authMiddleware(
   request: FastifyRequest,
@@ -19,8 +21,10 @@ export async function authMiddleware(
   // Usando o método de verificação do fastify-jwt
   const decoded = await request.server.jwt.verify<TokenPayload>(token);
   request.user = {
-    userId: decoded.userId, // Certifique-se de que o token contém essa propriedade
-    companyId: decoded.companyId || null, // Certifique-se de incluir companyId (se houver)
+    userId: decoded.userId, 
+    companyIds: decoded.companyIds || [],
+    assignedProjects: decoded.assignedProjects || [],
+    projectAdmin: decoded.projectAdmin || [],
   };
 
   // Se a verificação falhar, o erro será lançado

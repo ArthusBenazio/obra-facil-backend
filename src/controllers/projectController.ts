@@ -26,6 +26,7 @@ export function projectController(server: FastifyTypedInstance) {
           201: projectResponseSchema,
         },
         tags: ["Obras"],
+        description: "Cria uma nova obra",
       },
     },
     async (request, reply) => {
@@ -56,7 +57,7 @@ export function projectController(server: FastifyTypedInstance) {
         address: body.address,
         estimated_budget: body.estimated_budget,
         client: body.client,
-        created_by_user_id: user.userId,
+        user_id: user.userId,
         company_id: user.companyId || null,
       });
 
@@ -139,6 +140,7 @@ export function projectController(server: FastifyTypedInstance) {
           200: projectResponseSchema,
         },
         tags: ["Obras"],
+        description: "Atualiza uma obra",
       },
     },
     async (request, reply) => {
@@ -170,7 +172,7 @@ export function projectController(server: FastifyTypedInstance) {
         address: body.address,
         estimated_budget: body.estimated_budget,
         client: body.client,
-        created_by_user_id: user.userId,
+        user_id: user.userId,
         company_id: user.companyId || null,
       });
 
