@@ -4,7 +4,11 @@ import { z } from "zod";
 import { FastifyInstance } from "fastify";
 import { User } from "../entities/user";
 import { BadRequestError } from "../helpers/api-erros";
-import { loginSchema } from "../schemas/authSchemas";
+
+export const loginSchema = z.object({
+  email: z.string().email("E-mail inválido").min(1, "E-mail é obrigatório"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+});
 
 interface UserWithRelations extends User {
   companyUsers?: { company_id: string }[];

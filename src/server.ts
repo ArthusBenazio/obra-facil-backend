@@ -5,7 +5,12 @@ import cors from "@fastify/cors";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
 import routes from "./routes";
-import { jsonSchemaTransform, serializerCompiler, validatorCompiler, ZodTypeProvider } from "fastify-type-provider-zod";
+import {
+  jsonSchemaTransform,
+  serializerCompiler,
+  validatorCompiler,
+  ZodTypeProvider,
+} from "fastify-type-provider-zod";
 
 const server = fastify().withTypeProvider<ZodTypeProvider>();
 
@@ -14,7 +19,7 @@ server.setSerializerCompiler(serializerCompiler);
 
 // Registre o CORS no servidor
 server.register(cors, {
-  origin: ["http://localhost:3000", "http://localhost:8082"], // Domínio do frontend
+  origin: ["http://localhost:3000", "http://localhost:8081"], // Domínio do frontend
   methods: ["GET", "POST", "PUT", "DELETE"], // Métodos permitidos
   credentials: true, // Para permitir cookies, se necessário
 });
@@ -40,6 +45,21 @@ server.register(fastifySwagger, {
           type: "string",
           enum: ["person", "business"],
         },
+        ProjectStatus: {
+          type: "string",
+          enum: [
+            "nao_iniciado",
+            "iniciando",
+            "em_andamento",
+            "concluido",
+            "cancelado",
+            "em_espera",
+          ],
+        },
+        EmployeeStatus: {
+          type: "string",
+          enum: ["ativo", "inativo"],
+        }
       },
       securitySchemes: {
         bearerAuth: {
@@ -51,12 +71,12 @@ server.register(fastifySwagger, {
     },
     security: [{ bearerAuth: [] }],
   },
-  transform: jsonSchemaTransform
+  transform: jsonSchemaTransform,
 });
 
 server.register(fastifySwaggerUi, {
   routePrefix: "/docs",
-})
+});
 
 server.register(fastifyJWT, {
   secret: process.env.JWT_SECRET || "mysecretkey",

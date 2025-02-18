@@ -1,4 +1,3 @@
-import { user } from './../../node_modules/.prisma/client/index.d';
 import { User } from "../entities/user";
 import { UnauthorizedError } from "../helpers/api-erros";
 import { authMiddleware } from "../middlewares/authMiddleware";
@@ -9,12 +8,9 @@ import {
 } from "../schemas/employeeSchema";
 import { employeeService } from "../services/employeeService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
+import { AuthenticatedUser } from '../types/authenticatedUser';
 
 export async function employeeController(server: FastifyTypedInstance) {
-
-  interface AuthenticatedUser extends User {
-    userId: string;
-  }
 
   server.post(
     "/employee",
