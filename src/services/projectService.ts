@@ -96,10 +96,15 @@ export const projectService = {
   ): Promise<Projects> {
     const project = await prisma.project.findFirst({
       where: {
-        OR: [
-          { company_id: companyId },
-          { user_id: userId },
-          { assigned_user_id: userId },
+        AND: [
+          { id },
+          {
+            OR: [
+              { company_id: companyId },
+              { user_id: userId },
+              { assigned_user_id: userId },
+            ],
+          },
         ],
       },
     });
