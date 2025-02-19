@@ -1,4 +1,5 @@
 import { Projects } from "../entities/project";
+import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
 import { prisma } from "../lib/prisma";
 import { ProjectResponse } from "../schemas/projectSchemas";
 
@@ -36,7 +37,7 @@ export const projectService = {
       });
 
       if (!assignedUser) {
-        throw new Error("Usuário atribuído não encontrado.");
+        throw new BadRequestError("Usuário atribuído não encontrado.");
       }
     }
 
@@ -65,7 +66,7 @@ export const projectService = {
           "em_espera",
         ].includes(project.status)
       ) {
-        throw new Error(`Status inválido encontrado: ${project.status}`);
+        throw new BadRequestError(`Status inválido encontrado: ${project.status}`);
       }
 
       return new Projects(
@@ -91,29 +92,32 @@ export const projectService = {
 
   async getProjectById(
     id: string,
-    userId: string,
+    userId: string, 
     companyId?: string | null
   ): Promise<Projects> {
-    const project = await prisma.project.findFirst({
-      where: {
-        AND: [
-          { id },
-          {
-            OR: [
-              { company_id: companyId },
-              { user_id: userId },
-              { assigned_user_id: userId },
-            ],
-          },
-        ],
+    const project = await prisma.project.findUnique({
+      where: { id },
+      include: {
+        company: true,
+        assigned_user: true,
       },
     });
 
     if (!project) {
-      throw new Error(
-        "Projeto não encontrado ou você não tem permissão para acessá-lo."
+      throw new BadRequestError(
+        "Projeto não encontrado."
       );
     }
+
+    const hasPermission =
+      project.company_id === companyId ||
+      project.user_id === userId ||
+      (project.assigned_user && project.assigned_user.id === userId);
+
+    if (!hasPermission) {
+      throw new UnauthorizedError("Você não tem permissão para acessar este projeto.");
+    }
+
     return new Projects(
       project.id,
       project.name,
@@ -165,7 +169,7 @@ export const projectService = {
       });
 
       if (!assignedUser) {
-        throw new Error("Usuário atribuído não encontrado.");
+        throw new BadRequestError("Usuário atribuído não encontrado.");
       }
     }
 
@@ -177,7 +181,7 @@ export const projectService = {
     });
 
     if (!project) {
-      throw new Error(`Projeto com o id ${id} não encontrado.`);
+      throw new BadRequestError(`Projeto com o id ${id} não encontrado.`);
     }
 
     return new Projects(
@@ -207,11 +211,15 @@ export const projectService = {
   },
 
   async deleteProject(id: string): Promise<void> {
-    await prisma.project.delete({
+    const project = await prisma.project.delete({
       where: {
         id,
       },
     });
+
+    if (!project) {
+      throw new BadRequestError(`Projeto com o id ${id} não encontrado.`);
+    }
 
     return;
   },
