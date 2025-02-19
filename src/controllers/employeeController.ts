@@ -28,8 +28,6 @@ export async function employeeController(server: FastifyTypedInstance) {
     async (request, reply) => {
       const user = request.user as AuthenticatedUser;
 
-      console.log("Usuário autenticado:", user);
-
       if (!user) {
         throw new UnauthorizedError("Usuário não autenticado.");
       }
