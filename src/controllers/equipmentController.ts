@@ -42,7 +42,7 @@ export async function equipmentController(server: FastifyTypedInstance) {
   );
 
   server.get(
-    "/equipment",
+    "/equipments",
     {
       preHandler: [authMiddleware],
       schema: {
