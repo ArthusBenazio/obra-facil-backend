@@ -1,10 +1,8 @@
-import { isValid, parse } from "date-fns";
 import { z } from "zod";
 
-const validateBrazilianDate = (date: string) => {
-  const parsedDate = parse(date, "dd/MM/yyyy", new Date());
-  return isValid(parsedDate);
-};
+const dateSchema = z.union([z.string(), z.date()]).transform((val) =>
+  typeof val === "string" ? new Date(val) : val
+);
 
 export const projectSchema = z.object({
   name: z.string().nonempty("O nome da obra é obrigatório."),
@@ -12,18 +10,8 @@ export const projectSchema = z.object({
   responsible: z.string().nonempty("O responsável pela obra é obrigatório."),
   engineer: z.string().optional(),
   crea_number: z.string().optional(),
-  start_date: z
-    .string()
-    .nonempty("A data de início é obrigatória.")
-    .refine(validateBrazilianDate, {
-      message: "A data de início deve ser válida.",
-    }),
-  expected_end_date: z
-    .string()
-    .nonempty("A previsão de término é obrigatória.")
-    .refine(validateBrazilianDate, {
-      message: "A previsão de término deve ser válida.",
-    }),
+  start_date: dateSchema,
+  expected_end_date: dateSchema,
   status: z.enum([
     "nao_iniciado",
     "iniciando",

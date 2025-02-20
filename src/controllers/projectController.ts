@@ -6,7 +6,6 @@ import {
   projectResponseSchema,
   projectSchema,
 } from "../schemas/projectSchemas";
-import { parse } from "date-fns";
 import { projectService } from "../services/projectService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 
@@ -30,6 +29,7 @@ export function projectController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
+      console.log("Request body recebido:", request.body);
       const user = request.user as User;
 
       if (!user) {
@@ -38,21 +38,14 @@ export function projectController(server: FastifyTypedInstance) {
 
       const body = projectSchema.parse(request.body);
 
-      const startDate = parse(body.start_date, "dd/MM/yyyy", new Date());
-      const expectedEndDate = parse(
-        body.expected_end_date,
-        "dd/MM/yyyy",
-        new Date()
-      );
-
       const newProject = await projectService.createProject({
         name: body.name,
         description: body.description,
         responsible: body.responsible,
         engineer: body.engineer,
         crea_number: body.crea_number,
-        start_date: startDate,
-        expected_end_date: expectedEndDate,
+        start_date: body.start_date,
+        expected_end_date: body.expected_end_date,
         status: body.status,
         address: body.address,
         estimated_budget: body.estimated_budget,
@@ -153,21 +146,14 @@ export function projectController(server: FastifyTypedInstance) {
 
       const body = projectSchema.parse(request.body);
 
-      const startDate = parse(body.start_date, "dd/MM/yyyy", new Date());
-      const expectedEndDate = parse(
-        body.expected_end_date,
-        "dd/MM/yyyy",
-        new Date()
-      );
-
       const updatedProject = await projectService.updateProject(id, {
         name: body.name,
         description: body.description,
         responsible: body.responsible,
         engineer: body.engineer,
         crea_number: body.crea_number,
-        start_date: startDate,
-        expected_end_date: expectedEndDate,
+        start_date: body.start_date,
+        expected_end_date: body.expected_end_date,
         status: body.status,
         address: body.address,
         estimated_budget: body.estimated_budget,

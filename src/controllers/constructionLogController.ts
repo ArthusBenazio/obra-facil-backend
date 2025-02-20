@@ -6,7 +6,6 @@ import {
   constructionLogSchema,
   updateLogSchema,
 } from "../schemas/constrructionLogSchema";
-import { parse } from "date-fns";
 import { ConstructionLogService } from "../services/constructionLogService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 import { z } from "zod";
@@ -34,13 +33,10 @@ export async function constructionLogController(server: FastifyTypedInstance) {
       }
 
       const body = constructionLogSchema.parse(request.body);
-      console.log("Parsed Body:", body);
-
-      const bodyDate = parse(body.date, "dd/MM/yyyy", new Date());
 
       const newConstructionLog =
         await ConstructionLogService.createContructionLog({
-          date: bodyDate,
+          date: body.date,
           project_id: body.project_id,
           tasks: body.tasks ?? undefined,
           comments: body.comments ?? undefined,
@@ -146,14 +142,10 @@ export async function constructionLogController(server: FastifyTypedInstance) {
       }
 
       const body = updateLogSchema.parse(request.body);
-      console.log("Parsed Body for Update:", body);
 
       const updatedConstructionLog =
         await ConstructionLogService.updateConstructionLog(id, {
           ...body,
-          date: body.date
-            ? parse(body.date, "dd/MM/yyyy", new Date())
-            : undefined,
         });
 
       const constructionLogResponse = constructionLogResponseSchema.parse(

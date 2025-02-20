@@ -1,19 +1,12 @@
 import { Climate, Condition, Period } from "@prisma/client";
-import { isValid, parse } from "date-fns";
 import { date, z } from "zod";
 
-const validateBrazilianDate = (date: string) => {
-  const parsedDate = parse(date, "dd/MM/yyyy", new Date());
-  return isValid(parsedDate);
-};
+const dateSchema = z.union([z.string(), z.date()]).transform((val) =>
+  typeof val === "string" ? new Date(val) : val
+);
 
 export const constructionLogSchema = z.object({
-  date: z
-    .string()
-    .nonempty("A data de início é obrigatória.")
-    .refine(validateBrazilianDate, {
-      message: "A data deve ser válida.",
-    }),
+  date: dateSchema,
   project_id: z.string(),
   tasks: z.string().optional().nullable(),
   comments: z.string().optional().nullable(),
