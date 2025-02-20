@@ -313,10 +313,9 @@ enum Period {
 }
 
 enum Climate {
-  ensolarado
+  ceu_limpo
   nublado
   chuvoso
-  tempestade
 }
 
 enum Condition {
