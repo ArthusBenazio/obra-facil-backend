@@ -15,7 +15,7 @@ export const constructionLogSchema = z.object({
       message: "A data deve ser válida.",
     }),
   project_id: z.string(),
-  tasks: z.string(),
+  tasks: z.string().optional().nullable(),
   comments: z.string().optional().nullable(),
   weathers: z
     .array(

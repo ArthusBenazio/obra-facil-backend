@@ -4,7 +4,7 @@ export class ConstructionLog {
   id: string;
   date: Date;
   project_id: string;
-  tasks: string;
+  tasks?: string | null;
   comments?: string | null;
   created_at: Date;
   updated_at: Date;
@@ -19,7 +19,7 @@ export class ConstructionLog {
     id: string,
     date: Date,
     project_id: string,
-    tasks: string,
+    tasks?: string,
     comments?: string,
     created_at?: Date,
     updated_at?: Date,

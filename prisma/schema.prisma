@@ -125,7 +125,7 @@ model construction_log {
   id         String   @id @default(uuid())
   date       DateTime
   project_id String
-  tasks      String
+  tasks      String?
   comments   String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

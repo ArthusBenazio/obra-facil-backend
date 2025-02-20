@@ -7,7 +7,7 @@ export const ConstructionLogService = {
   async createContructionLog(data: {
     date: Date;
     project_id: string;
-    tasks: string;
+    tasks?: string;
     comments?: string;
     weathers: { period: string; climate: string; condition: string }[];
     occurrences?: { type: string; description: string; employee_id?: string }[];
@@ -177,7 +177,7 @@ export const ConstructionLogService = {
     data: {
       date?: Date;
       project_id?: string;
-      tasks?: string;
+      tasks?: string | null;
       comments?: string | null;
       weathers?: { period: string; climate: string; condition: string }[];
       occurrences?: {

@@ -42,7 +42,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
         await ConstructionLogService.createContructionLog({
           date: bodyDate,
           project_id: body.project_id,
-          tasks: body.tasks,
+          tasks: body.tasks ?? undefined,
           comments: body.comments ?? undefined,
           weathers: body.weathers,
           occurrences: body.occurrences?.map((occurrence) => ({
