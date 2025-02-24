@@ -2,9 +2,9 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../lib/prisma";
 import { z } from "zod";
 import { BadRequestError } from "../helpers/api-erros";
-import { User } from "../entities/user";
 import { UserResponse } from "../types/userTypes";
 import { registerSchema } from "../schemas/userSchemas";
+import { subscription_plan } from "@prisma/client";
 
 export const usersService = {
   async registerUser(body: z.infer<typeof registerSchema>) {
@@ -16,6 +16,14 @@ export const usersService = {
       throw new BadRequestError("E-mail já registrado.");
     }
 
+    const existingCpf = await prisma.user.findUnique({
+      where: { cpf: body.cpf },
+    });
+
+    if (existingCpf) {
+      throw new BadRequestError("CPF já registrado.");
+    }
+
     const hashedPassword = await bcrypt.hash(body.password, 10);
 
     const userData = {
@@ -24,10 +32,46 @@ export const usersService = {
       phone: body.phone,
       password_hash: hashedPassword,
       cpf: body.cpf,
-      subscription_plan: body.subscriptionPlan,
-      role: body.role,
       user_type: body.userType,
     };
+
+    const newUser = await prisma.user.create({ data: userData });
+    let newCompany = null;
+
+    if (body.userType === "person") {
+      newCompany = await prisma.company.create({
+        data: {
+          company_name: body.name,
+          cnpj: undefined,
+          position_company: undefined,
+          subscription_plan: body.subscriptionPlan,
+        },
+      });
+
+      await prisma.company_user.create({
+        data: {
+          user_id: newUser.id,
+          company_id: newCompany.id,
+          role: "admin",
+        },
+      });
+
+      return {
+        id: newUser.id,
+        name: newUser.name,
+        phone: newUser.phone,
+        email: newUser.email,
+        cpf: newUser.cpf,
+        userType: newUser.user_type,
+        company: {
+          id: newCompany.id,
+          companyName: newCompany.company_name,
+          positionCompany: newCompany.position_company,
+          cnpj: newCompany.cnpj,
+          subscriptionPlan: newCompany.subscription_plan,
+        },
+      };
+    }
 
     if (body.userType === "business") {
       if (!body.companyName || !body.cnpj || !body.positionCompany) {
@@ -44,71 +88,49 @@ export const usersService = {
         throw new BadRequestError("Empresa já cadastrada com este CNPJ.");
       }
 
-      const existingCPF = await prisma.user.findUnique({
-        where: { cpf: body.cpf },
-      });
-
-      if (existingCPF) {
-        throw new BadRequestError("CPF já cadastrado.");
-      }
-
-      // Cria o usuário e a empresa
-      const newUser = await prisma.user.create({
+      const newCompany = await prisma.company.create({
         data: {
-          ...userData,
-          companies: {
-            create: {
-              company_name: body.companyName,
-              cnpj: body.cnpj,
-              position_company: body.positionCompany,
-            },
-          },
-        },
-        include: {
-          companies: true,
+          company_name: body.companyName,
+          cnpj: body.cnpj,
+          position_company: body.positionCompany,
+          subscription_plan: body.subscriptionPlan,
         },
       });
 
       await prisma.company_user.create({
         data: {
           user_id: newUser.id,
-          company_id: newUser.companies[0].id,
-          role: body.role,
+          company_id: newCompany.id,
+          role: "admin",
         },
       });
 
       return {
-        ...new User(
-          newUser.id,
-          newUser.name,
-          newUser.phone,
-          newUser.email,
-          newUser.password_hash,
-          newUser.cpf,
-          newUser.subscription_plan,
-          newUser.role,
-          newUser.user_type as "person" | "business"
-        ),
-        company: newUser.companies[0],
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        cpf: newUser.cpf,
+        userType: newUser.user_type,
+        company: {
+          id: newCompany.id,
+          companyName: newCompany.company_name,
+          cnpj: newCompany.cnpj,
+          positionCompany: newCompany.position_company,
+          subscriptionPlan: newCompany.subscription_plan,
+        },
       };
     }
 
-    // Cria apenas o usuário (tipo "person")
-    const newUser = await prisma.user.create({
-      data: userData,
-    });
-
-    return new User(
-      newUser.id,
-      newUser.name,
-      newUser.phone,
-      newUser.email,
-      newUser.password_hash,
-      newUser.cpf,
-      newUser.subscription_plan,
-      newUser.role,
-      newUser.user_type as "person" | "business"
-    );
+    return {
+      id: newUser.id,
+      name: newUser.name,
+      phone: newUser.phone,
+      email: newUser.email,
+      cpf: newUser.cpf,
+      userType: newUser.user_type,
+      company: null, // Se não for person ou business, empresa é null (aqui apenas por segurança, mas deve ser evitado se tipos de usuário forem limitados)
+    };
   },
 
   async getAllUsers() {
@@ -123,20 +145,31 @@ export const usersService = {
     });
 
     return users.map((user) => {
-      const userResponse: UserResponse & { company?: any } = {
+      const userResponse: UserResponse = {
         id: user.id,
         name: user.name,
         phone: user.phone,
         email: user.email,
-        subscriptionPlan: user.subscription_plan,
-        role: user.role,
         userType: user.user_type,
         cpf: user.cpf,
+        company:
+          user.company_user && user.company_user.length > 0
+            ? {
+                id: user.company_user[0].company.id,
+                companyName: user.company_user[0].company.company_name,
+                cnpj: user.company_user[0].company.cnpj ?? undefined,
+                positionCompany:
+                  user.company_user[0].company.position_company ?? undefined,
+                subscriptionPlan:
+                  user.company_user[0].company.subscription_plan,
+              }
+            : {
+                id: "",
+                companyName: "",
+                subscriptionPlan: "free",
+              },
       };
 
-      if (user.company_user && user.company_user.length > 0) {
-        userResponse.company = user.company_user[0].company;
-      }
       return userResponse;
     });
   },
@@ -162,15 +195,25 @@ export const usersService = {
       name: user.name,
       phone: user.phone,
       email: user.email,
-      subscriptionPlan: user.subscription_plan,
-      role: user.role,
       userType: user.user_type,
       cpf: user.cpf,
+      company:
+      user.company_user && user.company_user.length > 0
+        ? {
+            id: user.company_user[0].company.id,
+            companyName: user.company_user[0].company.company_name,
+            cnpj: user.company_user[0].company.cnpj ?? undefined,
+            positionCompany:
+              user.company_user[0].company.position_company ?? undefined,
+            subscriptionPlan:
+              user.company_user[0].company.subscription_plan,
+          }
+        : {
+            id: "",
+            companyName: "",
+            subscriptionPlan: "free",
+          },
     };
-
-    if (user.company_user && user.company_user.length > 0) {
-      userResponse.company = user.company_user[0].company;
-    }
 
     return userResponse;
   },
@@ -179,7 +222,11 @@ export const usersService = {
     const user = await prisma.user.findUnique({
       where: { id },
       include: {
-        companies: true,
+        company_user: {
+          include: {
+            company: true,
+          },
+        },
       },
     });
 
@@ -192,8 +239,6 @@ export const usersService = {
       email: body.email,
       phone: body.phone,
       cpf: body.cpf,
-      subscription_plan: body.subscriptionPlan,
-      role: body.role,
       user_type: body.userType,
     };
 
@@ -206,14 +251,18 @@ export const usersService = {
     });
 
     if (existingUser && existingUser.id !== user.id) {
-      throw new Error("Este e-mail já está em uso por outro usuário.");
+      throw new BadRequestError("Este e-mail já está em uso por outro usuário.");
     }
 
     const updatedUser = await prisma.user.update({
       where: { id },
       data: updatedData,
       include: {
-        companies: true,
+        company_user: {
+          include: {
+            company: true, // Inclua a empresa associada ao usuário
+          },
+        },
       },
     });
 
@@ -226,9 +275,9 @@ export const usersService = {
         );
       }
 
-      if (user.companies && user.companies.length > 0) {
+      if (user.company_user && user.company_user.length > 0) {
         updatedCompany = await prisma.company.update({
-          where: { id: user.companies[0].id },
+          where: { id: user.company_user[0].company.id },
           data: {
             company_name: body.companyName,
             cnpj: body.cnpj,
@@ -238,22 +287,28 @@ export const usersService = {
       } else {
         updatedCompany = await prisma.company.create({
           data: {
-            id: id,
             company_name: body.companyName,
             cnpj: body.cnpj,
             position_company: body.positionCompany,
+            subscription_plan: body.subscriptionPlan as subscription_plan,
           },
         });
       }
     }
+
+    await prisma.company_user.create({
+      data: {
+        user_id: updatedUser.id,
+        company_id: updatedCompany?.id ?? "",
+        role: "admin",
+      },
+    });
 
     return {
       id: updatedUser.id,
       name: updatedUser.name,
       email: updatedUser.email,
       phone: updatedUser.phone,
-      subscriptionPlan: updatedUser.subscription_plan,
-      role: updatedUser.role,
       userType: updatedUser.user_type,
       cpf: updatedUser.cpf,
       company: updatedCompany
@@ -263,6 +318,7 @@ export const usersService = {
             company_name: updatedCompany.company_name,
             cnpj: updatedCompany.cnpj,
             position_company: updatedCompany.position_company,
+            subscription_plan: updatedCompany.subscription_plan,
           }
         : null,
     };
