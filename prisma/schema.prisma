@@ -10,43 +10,41 @@ datasource db {
 // Model definitions
 
 model user {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  phone         String
+  password_hash String
+  cpf           String    @unique
+  user_type     user_type
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  //Relations
+  company_user        company_user[]
+  ownedcompany        company[]      @relation("CompanyOwner")
+  associatedCompanies company[]      @relation("CompanyUser")
+}
+
+model company {
   id                String            @id @default(uuid())
-  name              String
-  email             String            @unique
-  phone             String
-  password_hash     String
-  cpf               String            @unique
-  role              user_role
-  user_type         user_type
+  company_name      String
+  cnpj              String?           @unique
+  position_company  String?
   subscription_plan subscription_plan
+  owner_id          String
   created_at        DateTime          @default(now())
   updated_at        DateTime          @updatedAt
 
   // Relations
-  companies         company[]
-  projects_owned    project[]       @relation("ProjectOwner")
-  projects_assigned project[]       @relation("ProjectAssignee")
-  project_admins    project_admin[]
-  company_user      company_user[]
-  equipment         equipment[]
-  project           project[]
-}
-
-model company {
-  id               String   @id @default(uuid())
-  company_name     String
-  cnpj             String   @unique
-  position_company String
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
-
-  // Relations
+  owner         user           @relation("CompanyOwner", fields: [owner_id], references: [id])
   company_users company_user[]
   projects      project[]
   invitations   invitation[]
-  user          user?          @relation(fields: [userId], references: [id])
-  userId        String?
   equipment     equipment[]
+  employees     employee[]
+  user          user?          @relation("CompanyUser", fields: [userId], references: [id])
+  userId        String?
 }
 
 model company_user {
@@ -76,33 +74,14 @@ model project {
   estimated_budget  Float?
   client            String
   company_id        String?
-  user_id           String
-  assigned_user_id  String?        @unique(map: "project_assigned_user_id_unique")
   created_at        DateTime       @default(now())
   updated_at        DateTime       @updatedAt
 
   // Relations
   company           company?           @relation(fields: [company_id], references: [id])
-  owner             user?              @relation(name: "ProjectOwner", fields: [user_id], references: [id])
-  assigned_user     user?              @relation(name: "ProjectAssignee", fields: [assigned_user_id], references: [id])
-  project_admins    project_admin[]
   construction_logs construction_log[]
   equipment_usages  equipment_usage[]
   invitations       invitation[]       @relation("ProjectInvitation")
-  user              user?              @relation(fields: [userId], references: [id])
-  userId            String?
-}
-
-model project_admin {
-  id         String    @id @default(uuid())
-  project_id String
-  user_id    String
-  role       user_role
-  created_at DateTime  @default(now())
-
-  // Relations
-  project project @relation(fields: [project_id], references: [id])
-  user    user    @relation(fields: [user_id], references: [id])
 }
 
 model invitation {
@@ -160,9 +139,8 @@ model occurrence {
   created_at          DateTime @default(now())
 
   // Relations
-  construction_log     construction_log      @relation(fields: [construction_log_id], references: [id])
-  employee             employee?             @relation(fields: [employee_id], references: [id])
-  occurrence_employees occurrence_employee[]
+  construction_log construction_log @relation(fields: [construction_log_id], references: [id])
+  employee         employee?        @relation(fields: [employee_id], references: [id])
 }
 
 model service {
@@ -187,27 +165,24 @@ model employee {
   role       String
   daily_rate Float
   status     employee_status
-  user_id    String?
-  company_id String?
+  company_id String
   created_at DateTime        @default(now())
   updated_at DateTime        @updatedAt
 
   // Relations
   occurrences                occurrence[]
   construction_log_employees construction_log_employee[]
-  occurrence_employees       occurrence_employee[]
+  company                    company                     @relation(fields: [company_id], references: [id])
 }
 
 model equipment {
   id         String   @id @default(uuid())
   name       String
-  user_id    String?
   company_id String?
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
   // Relations
-  owner_user       user?             @relation(fields: [user_id], references: [id])
   owner_company    company?          @relation(fields: [company_id], references: [id])
   equipment_usages equipment_usage[]
 }
@@ -243,23 +218,12 @@ model construction_log_employee {
   employee_id         String
   role                String
   hours_worked        Float
+  comments            String?
   created_at          DateTime @default(now())
 
   // Relations
   construction_log construction_log @relation(fields: [construction_log_id], references: [id])
   employee         employee         @relation(fields: [employee_id], references: [id])
-}
-
-model occurrence_employee {
-  id            String   @id @default(uuid())
-  occurrence_id String
-  employee_id   String
-  role          String
-  created_at    DateTime @default(now())
-
-  // Relations
-  occurrence occurrence @relation(fields: [occurrence_id], references: [id])
-  employee   employee   @relation(fields: [employee_id], references: [id])
 }
 
 // Enum definitions

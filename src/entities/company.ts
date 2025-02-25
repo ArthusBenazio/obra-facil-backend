@@ -5,6 +5,7 @@ export class Company {
     public company_name: string,
     public cnpj: string,
     public position_company: string,
+    public subscription_plan: string,
     public created_at: Date,
     public updated_at: Date
   ) {}

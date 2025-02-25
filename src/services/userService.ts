@@ -42,9 +42,10 @@ export const usersService = {
       newCompany = await prisma.company.create({
         data: {
           company_name: body.name,
-          cnpj: undefined,
-          position_company: undefined,
-          subscription_plan: body.subscriptionPlan,
+          cnpj: null,
+          position_company: null,
+          subscription_plan: "free",
+          owner_id: newUser.id,
         },
       });
 
@@ -94,6 +95,7 @@ export const usersService = {
           cnpj: body.cnpj,
           position_company: body.positionCompany,
           subscription_plan: body.subscriptionPlan,
+          owner_id: newUser.id,
         },
       });
 
@@ -129,7 +131,7 @@ export const usersService = {
       email: newUser.email,
       cpf: newUser.cpf,
       userType: newUser.user_type,
-      company: null, // Se não for person ou business, empresa é null (aqui apenas por segurança, mas deve ser evitado se tipos de usuário forem limitados)
+      company: null, 
     };
   },
 
@@ -291,6 +293,7 @@ export const usersService = {
             cnpj: body.cnpj,
             position_company: body.positionCompany,
             subscription_plan: body.subscriptionPlan as subscription_plan,
+            owner_id: updatedUser.id,
           },
         });
       }

@@ -13,5 +13,6 @@ export type UserResponse = {
     cnpj?: string;
     positionCompany?: string;
     subscriptionPlan: subscription_plan;
+    role?: string;
   };
 };
