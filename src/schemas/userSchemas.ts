@@ -9,10 +9,10 @@ const baseSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   userType: z.enum(["person", "business"]),
   cpf: z.string(),
-  companyName: z.string(),
-  cnpj: z.string(),
-  positionCompany: z.string(),
-  subscriptionPlan: z.enum(["free", "basic", "premium", "premium_plus"]),
+  companyName: z.string().optional(),
+  cnpj: z.string().optional(),
+  positionCompany: z.string().optional(),
+  subscriptionPlan: z.enum(["free", "basic", "premium", "premium_plus"]).default("free"),
 });
 
 export const registerSchema = baseSchema.refine(

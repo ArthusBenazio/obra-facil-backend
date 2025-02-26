@@ -154,23 +154,15 @@ export const usersService = {
         email: user.email,
         userType: user.user_type,
         cpf: user.cpf,
-        company:
-          user.company_user && user.company_user.length > 0
-            ? {
-                id: user.company_user[0].company.id,
-                companyName: user.company_user[0].company.company_name,
-                cnpj: user.company_user[0].company.cnpj ?? undefined,
-                positionCompany:
-                  user.company_user[0].company.position_company ?? undefined,
-                subscriptionPlan:
-                  user.company_user[0].company.subscription_plan,
-              }
-            : {
-                id: "",
-                companyName: "",
-                subscriptionPlan: "free",
-              },
-      };
+        companies: user.company_user.map((companyUser) => ({
+          id: companyUser.company.id,
+          companyName: companyUser.company.company_name,
+          cnpj: companyUser.company.cnpj ?? undefined,
+          positionCompany: companyUser.company.position_company ?? undefined,
+          subscriptionPlan: companyUser.company.subscription_plan,
+          role: companyUser.role, 
+        })),
+      }
 
       return userResponse;
     });
@@ -199,22 +191,14 @@ export const usersService = {
       email: user.email,
       userType: user.user_type,
       cpf: user.cpf,
-      company:
-      user.company_user && user.company_user.length > 0
-        ? {
-            id: user.company_user[0].company.id,
-            companyName: user.company_user[0].company.company_name,
-            cnpj: user.company_user[0].company.cnpj ?? undefined,
-            positionCompany:
-              user.company_user[0].company.position_company ?? undefined,
-            subscriptionPlan:
-              user.company_user[0].company.subscription_plan,
-          }
-        : {
-            id: "",
-            companyName: "",
-            subscriptionPlan: "free",
-          },
+      companies: user.company_user.map((companyUser) => ({
+        id: companyUser.company.id,
+        companyName: companyUser.company.company_name,
+        cnpj: companyUser.company.cnpj ?? undefined,
+        positionCompany: companyUser.company.position_company ?? undefined,
+        subscriptionPlan: companyUser.company.subscription_plan,
+        role: companyUser.role, // Inclua o papel do usuário na empresa, se necessário
+      })),
     };
 
     return userResponse;

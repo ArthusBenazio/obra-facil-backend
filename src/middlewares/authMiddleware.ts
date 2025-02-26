@@ -1,9 +1,9 @@
 import { UnauthorizedError } from "../helpers/api-erros";
 import { FastifyReply, FastifyRequest } from "fastify";
 
-interface TokenPayload {
+export interface TokenPayload {
   userId: string;
-  companyId: string;
+  companyIds: string[];
 }
 export async function authMiddleware(
   request: FastifyRequest,
@@ -18,16 +18,14 @@ export async function authMiddleware(
 
   // Usando o método de verificação do fastify-jwt
   const decoded = request.server.jwt.verify<TokenPayload>(token);
-  request.user = {
-    userId: decoded.userId, 
-    companyIds: decoded.companyId,
-  };
 
-  // Se a verificação falhar, o erro será lançado
   if (!decoded) {
     throw new UnauthorizedError('Token inválido ou expirado');
   }
 
-  // Anexa as informações do usuário à requisição
-  request.user = decoded;
+  request.user = {
+    userId: decoded.userId, 
+    companyIds: decoded.companyIds || [],
+  };
+  
 }

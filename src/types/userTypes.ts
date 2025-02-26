@@ -7,12 +7,12 @@ export type UserResponse = {
   phone: string;
   cpf: string;
   userType: user_type;
-  company: {
+  companies: {
     id: string;
     companyName: string;
     cnpj?: string;
     positionCompany?: string;
     subscriptionPlan: subscription_plan;
-    role?: string;
-  };
+    role: string;
+  }[];
 };
