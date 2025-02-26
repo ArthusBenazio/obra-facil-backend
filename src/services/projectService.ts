@@ -4,8 +4,7 @@ import { prisma } from "../lib/prisma";
 import { ProjectResponse } from "../schemas/projectSchemas";
 
 interface Project {
-  id: string;
-  company_id: string | null;
+  company_id: string;
 }
 
 export const projectService = {
@@ -27,31 +26,21 @@ export const projectService = {
     address: string;
     estimated_budget?: number;
     client: string;
-    assigned_user_id?: string;
-    user_id: string;
-    company_id?: string | null;
+    company_id: string;
   }): Promise<Project> {
-    if (data.assigned_user_id) {
-      const assignedUser = await prisma.user.findUnique({
-        where: { id: data.assigned_user_id },
-      });
+    console.log("Dados recebidos no serviço para criar projeto:", data); // Depuração
 
-      if (!assignedUser) {
-        throw new BadRequestError("Usuário atribuído não encontrado.");
-      }
-    }
+    const newProject = await prisma.project.create({ data });
 
-    return prisma.project.create({ data });
+    console.log("Projeto criado no banco de dados:", newProject); // Depuração
+
+    return newProject;
   },
 
-  async getAllProjects(userId: string, companyId: string): Promise<Projects[]> {
+  async getAllProjects(companyIds: string[]): Promise<Projects[]> {
     const projects = await prisma.project.findMany({
       where: {
-        OR: [
-          { company_id: companyId },
-          { user_id: userId },
-          { assigned_user_id: userId },
-        ],
+        company_id: { in: companyIds },
       },
     });
 
@@ -66,7 +55,9 @@ export const projectService = {
           "em_espera",
         ].includes(project.status)
       ) {
-        throw new BadRequestError(`Status inválido encontrado: ${project.status}`);
+        throw new BadRequestError(
+          `Status inválido encontrado: ${project.status}`
+        );
       }
 
       return new Projects(
@@ -80,7 +71,6 @@ export const projectService = {
         project.address,
         project.client,
         project.company_id ?? "",
-        project.user_id,
         project.created_at,
         project.updated_at,
         project.engineer ?? "",
@@ -92,30 +82,25 @@ export const projectService = {
 
   async getProjectById(
     id: string,
-    userId: string, 
-    companyId?: string | null
+    companyIds: string[]
   ): Promise<Projects> {
     const project = await prisma.project.findUnique({
       where: { id },
       include: {
         company: true,
-        assigned_user: true,
       },
     });
 
     if (!project) {
-      throw new BadRequestError(
-        "Projeto não encontrado."
-      );
+      throw new BadRequestError("Projeto não encontrado.");
     }
 
-    const hasPermission =
-      project.company_id === companyId ||
-      project.user_id === userId ||
-      (project.assigned_user && project.assigned_user.id === userId);
+    const hasPermission = companyIds.includes(project.company_id);
 
     if (!hasPermission) {
-      throw new UnauthorizedError("Você não tem permissão para acessar este projeto.");
+      throw new UnauthorizedError(
+        "Você não tem permissão para acessar este projeto."
+      );
     }
 
     return new Projects(
@@ -128,8 +113,7 @@ export const projectService = {
       project.status,
       project.address,
       project.client,
-      project.company_id ?? "",
-      project.user_id,
+      project.company_id,
       project.created_at,
       project.updated_at,
       project.engineer ?? "",
@@ -158,21 +142,9 @@ export const projectService = {
       address: string;
       estimated_budget?: number;
       client: string;
-      user_id: string;
-      assigned_user_id?: string;
-      company_id: string | null;
+      company_id: string;
     }
   ): Promise<Projects> {
-    if (data.assigned_user_id) {
-      const assignedUser = await prisma.user.findUnique({
-        where: { id: data.assigned_user_id },
-      });
-
-      if (!assignedUser) {
-        throw new BadRequestError("Usuário atribuído não encontrado.");
-      }
-    }
-
     const project = await prisma.project.update({
       where: {
         id,
@@ -201,7 +173,6 @@ export const projectService = {
       project.address,
       project.client,
       project.company_id ?? "",
-      project.user_id,
       project.created_at,
       project.updated_at,
       project.engineer ?? "",

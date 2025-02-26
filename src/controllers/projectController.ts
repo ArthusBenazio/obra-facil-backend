@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { UnauthorizedError } from "../helpers/api-erros";
-import { authMiddleware } from "../middlewares/authMiddleware";
+import { authMiddleware, TokenPayload } from "../middlewares/authMiddleware";
 import {
   ProjectResponse,
   projectResponseSchema,
@@ -10,8 +10,7 @@ import { projectService } from "../services/projectService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 
 interface User {
-  userId: string;
-  companyId?: string | null;
+  companyIds: string;
 }
 
 export function projectController(server: FastifyTypedInstance) {
@@ -29,14 +28,22 @@ export function projectController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-      console.log("Request body recebido:", request.body);
-      const user = request.user as User;
 
-      if (!user) {
-        throw new UnauthorizedError("Usuário não autenticado.");
+      const user = request.user as TokenPayload;
+
+      if (!user || !user.companyIds || user.companyIds.length === 0) {
+        throw new UnauthorizedError("Usuário não autenticado ou sem empresas associadas.");
       }
 
       const body = projectSchema.parse(request.body);
+
+      if (!user.companyIds.map(String).includes(String(body.company_id))) {
+        throw new UnauthorizedError("Usuário não tem acesso a essa empresa.");
+      }
+
+      if (!user.companyIds.includes(body.company_id)) {
+        throw new UnauthorizedError("Usuário não tem acesso a essa empresa.");
+      }
 
       const newProject = await projectService.createProject({
         name: body.name,
@@ -50,8 +57,7 @@ export function projectController(server: FastifyTypedInstance) {
         address: body.address,
         estimated_budget: body.estimated_budget,
         client: body.client,
-        user_id: user.userId,
-        company_id: user.companyId || null,
+        company_id: body.company_id,
       });
 
       reply.status(201).send(projectResponseSchema.parse(newProject));
@@ -71,18 +77,15 @@ export function projectController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-      const user = request.user as User;
+      const user = request.user as TokenPayload;
 
       if (!user) {
         throw new UnauthorizedError("Usuário não autenticado.");
       }
 
-      const { userId, companyId } = user;
+      const { companyIds } = user;
 
-      const projects = await projectService.getAllProjects(
-        userId,
-        companyId ?? ""
-      );
+      const projects = await projectService.getAllProjects(companyIds);
 
       const formattedProjects = projects.map((project) => ({
         ...project,
@@ -107,17 +110,13 @@ export function projectController(server: FastifyTypedInstance) {
     },
     async (request, reply) => {
       const { id } = request.params;
-      const user = request.user as User;
+      const user = request.user as TokenPayload;
 
-      if (!user) {
-        throw new UnauthorizedError("Usuário não autenticado.");
+      if (!user || !user.companyIds || user.companyIds.length === 0) {
+        throw new UnauthorizedError("Usuário não autenticado ou sem empresas associadas.");
       }
 
-      const project = await projectService.getProjectById(
-        id,
-        user.userId,
-        user.companyId ?? null
-      );
+      const project = await projectService.getProjectById(id, user.companyIds);
 
       reply.status(200).send(project);
     }
@@ -138,13 +137,21 @@ export function projectController(server: FastifyTypedInstance) {
     },
     async (request, reply) => {
       const { id } = request.params;
-      const user = request.user as User;
+      const user = request.user as TokenPayload;
 
-      if (!user) {
-        throw new UnauthorizedError("Usuário não autenticado.");
+      if (!user || !user.companyIds || user.companyIds.length === 0) {
+        throw new UnauthorizedError("Usuário não autenticado ou sem empresas associadas.");
       }
 
       const body = projectSchema.parse(request.body);
+
+      if (!user.companyIds.map(String).includes(String(body.company_id))) {
+        throw new UnauthorizedError("Usuário não tem acesso a essa empresa.");
+      }
+
+      if (!user.companyIds.includes(body.company_id)) {
+        throw new UnauthorizedError("Usuário não tem acesso a essa empresa.");
+      }
 
       const updatedProject = await projectService.updateProject(id, {
         name: body.name,
@@ -158,8 +165,7 @@ export function projectController(server: FastifyTypedInstance) {
         address: body.address,
         estimated_budget: body.estimated_budget,
         client: body.client,
-        user_id: user.userId,
-        company_id: user.companyId || null,
+        company_id: body.company_id,
       });
 
       reply.status(200).send(projectResponseSchema.parse(updatedProject));
@@ -174,8 +180,8 @@ export function projectController(server: FastifyTypedInstance) {
         description: "Deleta uma obra por id",
         tags: ["Obras"],
         response: {
-          200: z.string()
-        }
+          200: z.string(),
+        },
       },
     },
     async (request, reply) => {

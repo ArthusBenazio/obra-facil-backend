@@ -23,7 +23,7 @@ export const projectSchema = z.object({
   address: z.string().nonempty("O endereço é obrigatório."),
   estimated_budget: z.number().optional(),
   client: z.string().nonempty("O cliente é obrigatório."),
-  assigned_user_id: z.string().optional().nullable(),
+  company_id: z.string(),
 });
 
 export const projectResponseSchema = z.object({
@@ -45,8 +45,7 @@ export const projectResponseSchema = z.object({
   ]),
   address: z.string(),
   estimated_budget: z.number().optional(),
-  user_id: z.string(),
-  company_id: z.string().optional().nullable(),
+  company_id: z.string(),
   assigned_user_id: z.string().optional().nullable(),
   client: z.string(),
   created_at: z.date(),
