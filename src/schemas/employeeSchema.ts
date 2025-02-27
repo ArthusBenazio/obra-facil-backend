@@ -9,6 +9,7 @@ export const registerEmployeeSchema = z
     status: z.enum(["ativo", "inativo"]),
     cpf: z.string().min(11, "CPF deve ter pelo menos 11 caracteres"),
     pix_key: z.string().min(11, "Chave PIX deve ter pelo menos 11 caracteres"),
+    company_id: z.string(),
   })
 
   export const employeeResponseSchema = z.object({
@@ -20,8 +21,7 @@ export const registerEmployeeSchema = z
     status: z.enum(["ativo", "inativo"]),
     cpf: z.string(),
     pix_key: z.string(),
-    user_id: z.string().optional().nullable(),
-    company_id: z.string().optional().nullable(),
+    company_id: z.string(),
     created_at: z.date(),
     updated_at: z.date(),
   });

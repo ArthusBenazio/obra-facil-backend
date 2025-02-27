@@ -2,6 +2,7 @@ import { prisma } from "../lib/prisma";
 import { ConstructionLog } from "../entities/constructionLog";
 import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
 import { attachment_type, Climate, Condition, Period } from "@prisma/client";
+import { date } from "zod";
 
 export const ConstructionLogService = {
   async createContructionLog(data: {
@@ -127,7 +128,8 @@ export const ConstructionLogService = {
 
   async getAllConstructionLogs(
     userId: string,
-    projectId: string
+    projectId: string,
+    date?: Date
   ): Promise<ConstructionLog[]> {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
@@ -156,9 +158,11 @@ export const ConstructionLogService = {
       throw new UnauthorizedError("Você não tem acesso a este projeto.");
     }
 
+    const dateFilter = date ? { date } : {};
+
     // Retorna os diários apenas da obra específica
     const constructionLogs = await prisma.construction_log.findMany({
-      where: { project_id: projectId },
+      where: { project_id: projectId, ...dateFilter },
       include: {
         weathers: true,
         occurrences: true,

@@ -11,30 +11,37 @@ export const employeeService = {
     status: "ativo" | "inativo";
     cpf: string;
     pix_key: string;
-    user_id?: string | null;
-    company_id?: string | null;
-
+    company_id: string;
   }): Promise<Employee> {
     return prisma.employee.create({
-      data,
+      data: {
+        name: data.name,
+        phone: data.phone,
+        role: data.role,
+        daily_rate: data.daily_rate,
+        status: data.status,
+        cpf: data.cpf,
+        pix_key: data.pix_key,
+        company: {
+          connect: {
+            id: data.company_id, 
+          },
+        },
+      },
     });
   },
 
   async getAllEmployees(user: User): Promise<Employee[]> {
-    if (user.companyId) {
-      return prisma.employee.findMany({
-        where: {
-          company_id: user.companyId,
-        },
-      });
-    } else {
-      return prisma.employee.findMany({
-        where: {
-          user_id: user.id,
-        },
-      });
-    }
+    const employees = await prisma.employee.findMany({
+      where: {
+        AND: [
+          { company_id: user.companyId },
+        ],
+      },
+    });
+    return employees;
   },
+  
 
   async getEmployeeById(id: string): Promise<Employee | null> {
     return prisma.employee.findUnique({

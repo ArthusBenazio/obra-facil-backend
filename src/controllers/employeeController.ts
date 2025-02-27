@@ -8,7 +8,6 @@ import {
 } from "../schemas/employeeSchema";
 import { employeeService } from "../services/employeeService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
-import { AuthenticatedUser } from '../types/authenticatedUser';
 
 export async function employeeController(server: FastifyTypedInstance) {
 
@@ -26,17 +25,10 @@ export async function employeeController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-      const user = request.user as AuthenticatedUser;
-
-      if (!user) {
-        throw new UnauthorizedError("Usuário não autenticado.");
-      }
-
+      
       const body = registerEmployeeSchema.parse(request.body);
       const employee = await employeeService.createEmployee({
         ...body,
-        company_id: user.companyId || null,
-        user_id: user.companyId ? null : user.userId,
       });
 
       const employeeResponse = employeeResponseSchema.parse(employee);
@@ -53,7 +45,7 @@ export async function employeeController(server: FastifyTypedInstance) {
           200: employeeResponseSchema.array(),
         },
         tags: ["Funcionários"],
-        description: "Retorna todos os funcionários",
+        description: "Retorna todos os funcionários da empresa do usuário autenticado.",
       },
     },
     async (request, reply) => {
@@ -82,11 +74,6 @@ export async function employeeController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-      const user = request.user as User;
-
-      if (!user) {
-        throw new UnauthorizedError("Usuário não autenticado.");
-      }
 
       const { id } = request.params;
       const employee = await employeeService.getEmployeeById(id);
@@ -109,11 +96,6 @@ export async function employeeController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-      const user = request.user as User;
-
-      if (!user) {
-        throw new UnauthorizedError("Usuário não autenticado.");
-      }
 
       const { id } = request.params;
       const body = registerEmployeeSchema.parse(request.body);
