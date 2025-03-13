@@ -28,8 +28,8 @@ export const constructionLogSchema = z.object({
   ).optional(),
   services: z.array(
     z.object({
-      name: z.string().nonempty("O nome do serviço é obrigatório."),
-      description: z.string().min(3, "A descrição do serviço é obrigatória."),
+      name: z.string(),
+      description: z.string(),
       value: z.number(),
     })
   ).optional(),
@@ -55,3 +55,8 @@ export const constructionLogResponseSchema = constructionLogSchema.extend({
 });
 
 export const updateLogSchema = constructionLogSchema.partial();
+
+export const getConstructionLogQuerySchema = z.object({
+  project_id: z.string(),
+  date: z.string().optional(),
+});
