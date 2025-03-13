@@ -5,6 +5,7 @@ import { projectController } from "./controllers/projectController";
 import { employeeController } from "./controllers/employeeController";
 import { constructionLogController } from "./controllers/constructionLogController";
 import { equipmentController } from "./controllers/equipmentController";
+import { emailController } from "./controllers/emailController";
 
 export default async function routes(server: FastifyInstance) {
   server.register(authController);
@@ -13,4 +14,5 @@ export default async function routes(server: FastifyInstance) {
   server.register(employeeController);
   server.register(constructionLogController);
   server.register(equipmentController)
+  server.register(emailController)
 }
