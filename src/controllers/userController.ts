@@ -2,12 +2,14 @@ import { usersService } from "../services/userService";
 import { UserResponse } from "../types/userTypes";
 import { BadRequestError } from "../helpers/api-erros";
 import {
+  addUserToCompanyResponseSchema,
+  addUserToCompanySchema,
   registerSchema,
   updateSchema,
   userResponseSchema,
 } from "../schemas/userSchemas";
 import { z } from "zod";
-import { authMiddleware } from "../middlewares/authMiddleware";
+import { authMiddleware, TokenPayload } from "../middlewares/authMiddleware";
 import { FastifyRequest } from "fastify";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 
@@ -43,15 +45,16 @@ export async function userController(server: FastifyTypedInstance) {
         cpf: newUser.cpf,
         email: newUser.email,
         userType: newUser.userType,
-        company: { 
-          id: newUser.company?.id || "",  
-          companyName: newUser.company?.companyName || "",
-          positionCompany: newUser.company?.positionCompany || "",
-          cnpj: newUser.company?.cnpj || "",
-          subscriptionPlan: newUser.company?.subscriptionPlan || "free",
-        },
+        companies: [
+          {
+            id: newUser.company?.id || "",
+            companyName: newUser.company?.companyName || "",
+            positionCompany: newUser.company?.positionCompany || "",
+            cnpj: newUser.company?.cnpj || "",
+            subscriptionPlan: newUser.company?.subscriptionPlan || "free",
+          },
+        ],
       };
-      
 
       return reply.status(201).send(userResponse);
     }
@@ -110,13 +113,38 @@ export async function userController(server: FastifyTypedInstance) {
       },
     },
     async (request: FastifyRequest<{ Params: ProfileParams }>, reply) => {
-      
       const body = updateSchema.parse(request.body);
-  
-      const updatedUser = await usersService.updateUser(request.params.id, body);
-  
+
+      const updatedUser = await usersService.updateUser(
+        request.params.id,
+        body
+      );
+
       return reply.status(200).send(updatedUser);
     }
   );
-  
+
+  server.post(
+    "/profile/add-user",
+    {
+      preHandler: [authMiddleware],
+      schema: {
+        body: addUserToCompanySchema,
+        response: {
+          201: addUserToCompanyResponseSchema,
+        },
+        description: "Um usuário adiciona outro usuário a uma empresa.",
+        tags: ["User"],
+      },
+    },
+    async (request, reply) => {
+
+      const { userId } = request.user as TokenPayload;
+
+      const body = addUserToCompanySchema.parse(request.body);
+      const result = await usersService.addUserToCompany({...body, userId});
+
+      return reply.status(201).send(result);
+    }
+  );
 }

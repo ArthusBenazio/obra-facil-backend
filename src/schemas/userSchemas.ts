@@ -50,13 +50,15 @@ export const userResponseSchema = z.object({
   phone: z.string(),
   userType: z.string(),
   cpf: z.string(),
-  company: z.object({
-    id: z.string(),
-    companyName: z.string(),
-    positionCompany: z.string().optional(),
-    cnpj: z.string().optional(),
-    subscriptionPlan: z.string(),
-  }),
+  companies: z.array( 
+    z.object({
+      id: z.string(),
+      companyName: z.string(),
+      positionCompany: z.string().optional(),
+      cnpj: z.string().optional(),
+      subscriptionPlan: z.string(),
+    })
+  ),
 });
 
 export const registerResponseSchema = z.object({
@@ -72,4 +74,33 @@ export const registerResponseSchema = z.object({
     positionCompany: z.string().optional(),
     subscriptionPlan: z.string(),
   }),
+});
+
+export const addUserToCompanySchema = z.object({
+  email: z.string().email("E-mail inválido"),
+  companyId: z.string().uuid("ID da empresa inválido"),
+  role: z.enum(["admin", "team", "client"]),
+  name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres").optional(),
+  phone: z.string().min(11, "Telefone deve ter no mínimo 11 caracteres").optional(),
+  cpf: z.string().min(11, "CPF deve ter 11 caracteres").optional(),
+  userType: z.enum(["person", "business"]).optional(),
+});
+
+export const addUserToCompanyResponseSchema = z.object({
+  user: z.object({
+    id: z.string(),
+    email: z.string(),
+    name: z.string(),
+    phone: z.string(),
+    cpf: z.string(),
+    userType: z.string(),
+  }),
+  company: z.object({
+    id: z.string(),
+    companyName: z.string(),
+    cnpj: z.string().optional(),
+    positionCompany: z.string().optional(),
+    subscriptionPlan: z.string(),
+  }),
+  role: z.enum(["admin", "team", "client"]),
 });

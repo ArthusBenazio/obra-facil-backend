@@ -1,10 +1,12 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../lib/prisma";
 import { z } from "zod";
-import { BadRequestError } from "../helpers/api-erros";
+import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
 import { UserResponse } from "../types/userTypes";
-import { registerSchema } from "../schemas/userSchemas";
-import { subscription_plan } from "@prisma/client";
+import { addUserToCompanySchema, registerSchema } from "../schemas/userSchemas";
+import { subscription_plan, user_role } from "@prisma/client";
+import { generateRandomPassword } from "../utils/generateRandomPassword";
+import { sendEmail } from "./emailService";
 
 export const usersService = {
   async registerUser(body: z.infer<typeof registerSchema>) {
@@ -131,7 +133,7 @@ export const usersService = {
       email: newUser.email,
       cpf: newUser.cpf,
       userType: newUser.user_type,
-      company: null, 
+      company: null,
     };
   },
 
@@ -160,9 +162,9 @@ export const usersService = {
           cnpj: companyUser.company.cnpj ?? undefined,
           positionCompany: companyUser.company.position_company ?? undefined,
           subscriptionPlan: companyUser.company.subscription_plan,
-          role: companyUser.role, 
+          role: companyUser.role,
         })),
-      }
+      };
 
       return userResponse;
     });
@@ -237,7 +239,9 @@ export const usersService = {
     });
 
     if (existingUser && existingUser.id !== user.id) {
-      throw new BadRequestError("Este e-mail já está em uso por outro usuário.");
+      throw new BadRequestError(
+        "Este e-mail já está em uso por outro usuário."
+      );
     }
 
     const updatedUser = await prisma.user.update({
@@ -308,6 +312,99 @@ export const usersService = {
             subscription_plan: updatedCompany.subscription_plan,
           }
         : null,
+    };
+  },
+
+  async addUserToCompany(body: z.infer<typeof addUserToCompanySchema> & { userId: string }) {
+    const { email, companyId, role, name, phone, cpf, userType, userId } = body;
+
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+    });
+
+    if (!company) {
+      throw new BadRequestError("Empresa não encontrada.");
+    }
+
+    const requester = await prisma.company_user.findFirst({
+      where: {
+        user_id: userId,
+        company_id: companyId,
+        role: "admin",
+      },
+    });
+  
+    if (!requester) {
+      throw new UnauthorizedError("Apenas administradores podem adicionar usuários a esta empresa.");
+    }
+
+    let user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      if (!name || !phone || !cpf || !userType) {
+        throw new BadRequestError(
+          "Para cadastrar um novo usuário, os campos name, phone, cpf e userType são obrigatórios."
+        );
+      }
+      const randomPassword = generateRandomPassword();
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+      user = await prisma.user.create({
+        data: {
+          email,
+          password_hash: hashedPassword,
+          name,
+          phone,
+          cpf,
+          user_type: userType,
+        },
+      });
+
+      await sendEmail(
+        email,
+        "Bem-vindo ao nosso app!",
+        `Sua senha temporária é: ${randomPassword}`
+      );
+    }
+
+    const existingCompanyUser = await prisma.company_user.findFirst({
+      where: {
+        user_id: user.id,
+        company_id: companyId,
+      },
+    });
+
+    if (existingCompanyUser) {
+      throw new BadRequestError("Usuário já está associado a esta empresa.");
+    }
+
+    await prisma.company_user.create({
+      data: {
+        user_id: user.id,
+        company_id: companyId,
+        role: role as user_role,
+      },
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        cpf: user.cpf,
+        userType: user.user_type,
+      },
+      company: {
+        id: company.id,
+        companyName: company.company_name,
+        cnpj: company.cnpj ?? undefined,
+        positionCompany: company.position_company ?? undefined,
+        subscriptionPlan: company.subscription_plan,
+      },
+      role,
     };
   },
 };
