@@ -3,7 +3,6 @@ import { UnauthorizedError } from "../helpers/api-erros";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { equipmentResponseSchema, equipmentSchema } from "../schemas/equipmentSchema";
 import { equipmentService } from "../services/equipmentService";
-import { AuthenticatedUser } from "../types/authenticatedUser";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 
 export async function equipmentController(server: FastifyTypedInstance) {
@@ -21,18 +20,11 @@ export async function equipmentController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-      const user = request.user as AuthenticatedUser;
-
-      if (!user) {
-        throw new UnauthorizedError("Usuário não autenticado.");
-      }
 
       const body = equipmentSchema.parse(request.body);
 
       const newEquipment = await equipmentService.createEquipment({
         ...body,
-        company_id: user.companyId || null,
-        user_id: user.companyId ? null : user.userId,
       });
 
       const equipmentResponse = equipmentResponseSchema.parse(newEquipment);
@@ -60,7 +52,7 @@ export async function equipmentController(server: FastifyTypedInstance) {
         throw new UnauthorizedError("Usuário não autenticado.");
       }   
 
-      const equipments = await equipmentService.getAllEquipments();
+      const equipments = await equipmentService.getAllEquipments(user);
 
       const equipmentResponse = equipmentResponseSchema.array().parse(equipments);  
 
@@ -115,11 +107,6 @@ export async function equipmentController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-      const user = request.user as User;
-
-      if (!user) {
-        throw new UnauthorizedError("Usuário não autenticado.");
-      }
 
       const { id } = request.params;
       const body = equipmentSchema.parse(request.body);

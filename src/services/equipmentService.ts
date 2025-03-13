@@ -1,5 +1,6 @@
 import { get } from "http";
 import { prisma } from "../lib/prisma";
+import { User } from "../entities/user";
 
 export const equipmentService = {
 
@@ -17,8 +18,21 @@ async getEquipmentById(id: string): Promise<any> {
   });
 },
 
-async getAllEquipments(): Promise<any> {
-  return prisma.equipment.findMany();
+async getAllEquipments(user: User): Promise<any> {
+  const equipment = await prisma.equipment.findMany(
+    {
+      where: {
+        AND: [
+          { company_id: user.companyId },
+        ],
+      },
+      orderBy: {
+        name: "asc",
+      },
+    }
+  );
+
+  return equipment;
 },
 
 async updateEquipment(id: string, data: any): Promise<any> {
