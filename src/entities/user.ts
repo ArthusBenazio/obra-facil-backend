@@ -8,6 +8,7 @@ export class User {
   cpf: string;
   passwordHash: string;
   userType: user_type;
+  companyId: string;
   
   constructor(
     id: string,
@@ -17,6 +18,7 @@ export class User {
     passwordHash: string,
     cpf: string,
     userType: "person" | "business",
+    companyId: string
   ) {
     this.id = id;
     this.name = name;
@@ -25,5 +27,6 @@ export class User {
     this.passwordHash = passwordHash;
     this.cpf = cpf;
     this.userType = userType;
+    this.companyId = companyId
   }
 }
