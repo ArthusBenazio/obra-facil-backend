@@ -8,9 +8,14 @@ import {
 } from "../schemas/projectSchemas";
 import { projectService } from "../services/projectService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
+import { FastifyRequest } from "fastify";
 
 interface User {
   companyIds: string;
+}
+
+interface CompanyQuery {
+  companyId?: string;
 }
 
 export function projectController(server: FastifyTypedInstance) {
@@ -76,7 +81,7 @@ export function projectController(server: FastifyTypedInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (request: FastifyRequest<{ Querystring: CompanyQuery }>, reply) => {
       const user = request.user as TokenPayload;
 
       if (!user) {
@@ -85,7 +90,13 @@ export function projectController(server: FastifyTypedInstance) {
 
       const { companyIds } = user;
 
-      const projects = await projectService.getAllProjects(companyIds);
+      let companyId = request.query.companyId as string;
+
+      if (!companyId && companyIds.length === 1) {
+        companyId = companyIds[0];
+      }
+
+      const projects = await projectService.getAllProjects(companyId);
 
       const formattedProjects = projects.map((project) => ({
         ...project,

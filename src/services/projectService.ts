@@ -37,11 +37,9 @@ export const projectService = {
     return newProject;
   },
 
-  async getAllProjects(companyIds: string[]): Promise<Projects[]> {
+  async getAllProjects(companyId: string): Promise<Projects[]> {
     const projects = await prisma.project.findMany({
-      where: {
-        company_id: { in: companyIds },
-      },
+      where: companyId ? { company_id: companyId } : {},
     });
 
     return projects.map((project) => {
