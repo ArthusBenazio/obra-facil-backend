@@ -106,9 +106,12 @@ export const ConstructionLogService = {
     return constructionLog;
   },
 
-  async getConstructionLogById(id: string): Promise<ConstructionLog> {
+  async getConstructionLogById(id: string, date?: Date): Promise<ConstructionLog> {
+    console.log("id", id);
+    const dateFilter = date ? { date: { equals: date } } : {};
+
     const constructionLog = await prisma.construction_log.findUnique({
-      where: { id },
+      where: { id, ...dateFilter },
       include: {
         weathers: true,
         occurrences: true,
@@ -127,32 +130,33 @@ export const ConstructionLogService = {
   },
 
   async getAllConstructionLogs(
-    userId: string,
     projectId: string,
+    userId: string,
     date?: Date
   ): Promise<ConstructionLog[]> {
+    console.log("projectId", projectId);
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      select: { id: true, user_id: true, company_id: true },
+      select: { id: true, company_id: true },
     });
+    console.log("dados do projeto", project);
 
     if (!project) {
       throw new BadRequestError("Projeto não encontrado.");
     }
 
-    // Verifica se o usuário tem acesso ao projeto
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, companies: { select: { id: true } } },
+      select: { id: true, company_user: { select: { company_id: true } } },
     });
-
+  
     if (!user) {
       throw new UnauthorizedError("Usuário não encontrado.");
     }
 
-    const hasAccess =
-      (project.company_id && project.company_id === user.companies[0].id) ||
-      (!project.company_id && project.user_id === user.id);
+    // Verifica se o usuário tem acesso ao projeto
+    const userCompanyIds = user.company_user.map((cu) => cu.company_id);
+    const hasAccess = userCompanyIds.includes(project.company_id);
 
     if (!hasAccess) {
       throw new UnauthorizedError("Você não tem acesso a este projeto.");

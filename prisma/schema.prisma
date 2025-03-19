@@ -73,12 +73,12 @@ model project {
   address           String
   estimated_budget  Float?
   client            String
-  company_id        String?
+  company_id        String
   created_at        DateTime       @default(now())
   updated_at        DateTime       @updatedAt
 
   // Relations
-  company           company?           @relation(fields: [company_id], references: [id])
+  company           company            @relation(fields: [company_id], references: [id])
   construction_logs construction_log[]
   equipment_usages  equipment_usage[]
   invitations       invitation[]       @relation("ProjectInvitation")

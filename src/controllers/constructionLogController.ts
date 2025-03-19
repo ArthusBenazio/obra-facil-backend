@@ -1,15 +1,15 @@
 import { User } from "../entities/user";
 import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
-import { authMiddleware } from "../middlewares/authMiddleware";
+import { authMiddleware, TokenPayload } from "../middlewares/authMiddleware";
 import {
   constructionLogResponseSchema,
   constructionLogSchema,
+  getConstructionLogByIdQuerySchema,
+  getConstructionLogQuerySchema,
   updateLogSchema,
 } from "../schemas/constrructionLogSchema";
 import { ConstructionLogService } from "../services/constructionLogService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
-import { z } from "zod";
-import { AuthenticatedUser } from "../types/authenticatedUser";
 
 export async function constructionLogController(server: FastifyTypedInstance) {
   server.post(
@@ -21,7 +21,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
         response: {
           201: constructionLogResponseSchema,
         },
-        tags: ["Diary"],
+        tags: ["Diário de Obra"],
         description: "Cria um novo diário de obra",
       },
     },
@@ -55,10 +55,6 @@ export async function constructionLogController(server: FastifyTypedInstance) {
     }
   );
 
-  const getConstructionLogQuerySchema = z.object({
-    project_id: z.string(),
-  });
-
   server.get(
     "/construction-log",
     {
@@ -68,15 +64,13 @@ export async function constructionLogController(server: FastifyTypedInstance) {
         response: {
           200: constructionLogResponseSchema.array(),
         },
-        tags: ["Diary"],
+        tags: ["Diário de Obra"],
         description: "Retorna os diários de uma obra específica",
       },
     },
     async (request, reply) => {
-      const user = request.user as AuthenticatedUser;
-      const { project_id } = request.query as { project_id: string };
-
-      console.log("user", user);
+      const user = request.user as TokenPayload;
+      const { project_id, date } = request.query as { project_id: string; date?: Date };
 
       if (!user) {
         throw new UnauthorizedError("Usuário não autenticado.");
@@ -88,10 +82,11 @@ export async function constructionLogController(server: FastifyTypedInstance) {
 
       const constructionLogs =
         await ConstructionLogService.getAllConstructionLogs(
+          project_id,
           user.userId,
-          project_id
+          date ? new Date(date) : undefined
         );
-        console.log(user.userId, project_id, constructionLogs);
+
       const constructionLogResponse = constructionLogResponseSchema
         .array()
         .parse(constructionLogs);
@@ -104,17 +99,20 @@ export async function constructionLogController(server: FastifyTypedInstance) {
     {
       preHandler: [authMiddleware],
       schema: {
+        querystring: getConstructionLogByIdQuerySchema,
         response: {
           200: constructionLogResponseSchema,
         },
-        tags: ["Diary"],
+        tags: ["Diário de Obra"],
         description: "Retorna um diário de obra",
       },
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
+      console.log("id", id);
+      const { date } = request.query as { date?: Date };
       const constructionLog =
-        await ConstructionLogService.getConstructionLogById(id);
+        await ConstructionLogService.getConstructionLogById(id, date ? new Date(date) : undefined);
       const constructionLogResponse =
         constructionLogResponseSchema.parse(constructionLog);
       return reply.status(200).send(constructionLogResponse);
@@ -130,7 +128,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
         response: {
           200: constructionLogResponseSchema,
         },
-        tags: ["Diary"],
+        tags: ["Diário de Obra"],
         description: "Atualiza um diário de obra",
       },
     },

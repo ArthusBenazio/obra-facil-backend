@@ -60,3 +60,7 @@ export const getConstructionLogQuerySchema = z.object({
   project_id: z.string(),
   date: z.string().optional(),
 });
+
+export const getConstructionLogByIdQuerySchema = z.object({
+  date: z.string().optional(),
+});

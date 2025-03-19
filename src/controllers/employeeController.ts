@@ -4,7 +4,9 @@ import { authMiddleware } from "../middlewares/authMiddleware";
 import {
   deleteEmployeeResponseSchema,
   employeeResponseSchema,
+  querystring,
   registerEmployeeSchema,
+  reportHoursWorkedResponseSchema,
 } from "../schemas/employeeSchema";
 import { employeeService } from "../services/employeeService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
@@ -129,4 +131,23 @@ export async function employeeController(server: FastifyTypedInstance) {
       return reply.status(200).send("Funcionario deletado com sucesso.");
     }
   );
+
+  server.get("/employees/report", {
+    preHandler: [authMiddleware],
+    schema: {
+      querystring: querystring,
+      response: {
+        200: reportHoursWorkedResponseSchema,
+      },
+      tags: ["Relatórios"],
+      description: "Retorna o relatório de horas trabalhadas",
+    }
+  },
+  async (request, reply) => {
+    const { start_date, end_date } = request.query;
+    const employees = await employeeService.getReportHoursWorked(start_date, end_date);
+    console.log("Retornando employees",employees);
+    return reply.status(200).send(employees);
+  }
+)
 }
