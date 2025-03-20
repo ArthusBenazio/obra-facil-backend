@@ -12,7 +12,6 @@ import { employeeService } from "../services/employeeService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 
 export async function employeeController(server: FastifyTypedInstance) {
-
   server.post(
     "/employee",
     {
@@ -27,7 +26,6 @@ export async function employeeController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-      
       const body = registerEmployeeSchema.parse(request.body);
       const employee = await employeeService.createEmployee({
         ...body,
@@ -47,7 +45,8 @@ export async function employeeController(server: FastifyTypedInstance) {
           200: employeeResponseSchema.array(),
         },
         tags: ["Funcionários"],
-        description: "Retorna todos os funcionários da empresa do usuário autenticado.",
+        description:
+          "Retorna todos os funcionários da empresa do usuário autenticado.",
       },
     },
     async (request, reply) => {
@@ -76,7 +75,6 @@ export async function employeeController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-
       const { id } = request.params;
       const employee = await employeeService.getEmployeeById(id);
       const employeeResponse = employeeResponseSchema.parse(employee);
@@ -98,7 +96,6 @@ export async function employeeController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-
       const { id } = request.params;
       const body = registerEmployeeSchema.parse(request.body);
       const employee = await employeeService.updateEmployee(id, body);
@@ -132,22 +129,32 @@ export async function employeeController(server: FastifyTypedInstance) {
     }
   );
 
-  server.get("/employees/report", {
-    preHandler: [authMiddleware],
-    schema: {
-      querystring: querystring,
-      response: {
-        200: reportHoursWorkedResponseSchema,
+  server.get(
+    "/employees/report",
+    {
+      preHandler: [authMiddleware],
+      schema: {
+        querystring: querystring,
+        response: {
+          200: reportHoursWorkedResponseSchema,
+        },
+        tags: ["Relatórios"],
+        description: "Retorna o relatório de horas trabalhadas",
       },
-      tags: ["Relatórios"],
-      description: "Retorna o relatório de horas trabalhadas",
+    },
+    async (request, reply) => {
+      const { company_id, start_date, end_date } = request.query;
+
+      if (!company_id) {
+        return reply.status(400);
+      }
+
+      const employees = await employeeService.getReportHoursWorked(
+        company_id,
+        start_date,
+        end_date
+      );
+      return reply.status(200).send(employees);
     }
-  },
-  async (request, reply) => {
-    const { start_date, end_date } = request.query;
-    const employees = await employeeService.getReportHoursWorked(start_date, end_date);
-    console.log("Retornando employees",employees);
-    return reply.status(200).send(employees);
-  }
-)
+  );
 }

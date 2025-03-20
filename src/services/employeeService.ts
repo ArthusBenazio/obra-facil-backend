@@ -72,6 +72,7 @@ export const employeeService = {
   },
 
   async getReportHoursWorked(
+    company_id: string,
     start_date?: string,
     end_date?: string
   ): Promise<any> {
@@ -84,6 +85,9 @@ export const employeeService = {
     } 
     const report = await prisma.construction_log_employee.findMany({
       where: {
+        employee: {
+          company_id,
+        },
         created_at: {
           gte: startDate,
           lte: endDate,

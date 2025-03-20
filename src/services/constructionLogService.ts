@@ -139,7 +139,6 @@ export const ConstructionLogService = {
       where: { id: projectId },
       select: { id: true, company_id: true },
     });
-    console.log("dados do projeto", project);
 
     if (!project) {
       throw new BadRequestError("Projeto não encontrado.");
