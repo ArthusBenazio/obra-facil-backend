@@ -72,7 +72,7 @@ export const employeeService = {
   },
 
   async getReportHoursWorked(
-    company_id: string,
+    project_id: string,
     start_date?: string,
     end_date?: string
   ): Promise<any> {
@@ -83,10 +83,25 @@ export const employeeService = {
       startDate = new Date(start_date);
       endDate = new Date(end_date);
     } 
+    const project = await prisma.project.findUnique({
+      where: {
+        id: project_id,
+      },
+      select: {
+        company_id: true,
+      },
+    });
+  
+    if (!project) {
+      throw new Error("Projeto não encontrado");
+    }
     const report = await prisma.construction_log_employee.findMany({
       where: {
         employee: {
-          company_id,
+          company_id: project.company_id
+        },
+        construction_log: {
+              project_id: project_id 
         },
         created_at: {
           gte: startDate,

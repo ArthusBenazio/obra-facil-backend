@@ -43,7 +43,7 @@ export const reportHoursWorkedResponseSchema = z.array(
 );
 
 export const querystring = z.object({
-  company_id: z.string(),
+  project_id: z.string(),
   start_date: z.string().optional(),
   end_date: z.string().optional(),
 });

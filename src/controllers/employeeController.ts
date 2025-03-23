@@ -124,7 +124,7 @@ export async function employeeController(server: FastifyTypedInstance) {
       }
 
       const { id } = request.params;
-      const employee = await employeeService.deleteEmployee(id);
+      await employeeService.deleteEmployee(id);
       return reply.status(200).send("Funcionario deletado com sucesso.");
     }
   );
@@ -143,14 +143,14 @@ export async function employeeController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-      const { company_id, start_date, end_date } = request.query;
+      const { project_id, start_date, end_date } = request.query;
 
-      if (!company_id) {
+      if (!project_id) {
         return reply.status(400);
       }
 
       const employees = await employeeService.getReportHoursWorked(
-        company_id,
+        project_id,
         start_date,
         end_date
       );
