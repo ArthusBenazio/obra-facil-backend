@@ -38,8 +38,6 @@ export async function authController(server: FastifyTypedInstance) {
         })),
       };
 
-      console.log(authResponse)
-
       return reply.send({ token, user: authResponse });
     }
   );
