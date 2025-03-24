@@ -1,9 +1,9 @@
 import { Climate, Condition, Period } from "@prisma/client";
 import { date, z } from "zod";
 
-const dateSchema = z.union([z.string(), z.date()]).transform((val) =>
-  typeof val === "string" ? new Date(val) : val
-);
+const dateSchema = z
+  .union([z.string(), z.date()])
+  .transform((val) => (typeof val === "string" ? new Date(val) : val));
 
 export const constructionLogSchema = z.object({
   date: dateSchema,
@@ -19,32 +19,38 @@ export const constructionLogSchema = z.object({
       })
     )
     .nonempty("Pelo menos um clima deve ser registrado"),
-  occurrences: z.array(
-    z.object({
-      type: z.string(),
-      description: z.string(),
-      employee_id: z.string().uuid().optional().nullable(),
-    })
-  ).optional(),
-  services: z.array(
-    z.object({
-      name: z.string(),
-      description: z.string(),
-      value: z.number(),
-    })
-  ).optional(),
+  occurrences: z
+    .array(
+      z.object({
+        type: z.string(),
+        description: z.string(),
+        employee_id: z.string().uuid().optional().nullable(),
+      })
+    )
+    .optional(),
+  services: z
+    .array(
+      z.object({
+        name: z.string(),
+        description: z.string(),
+        value: z.number(),
+      })
+    )
+    .optional(),
   employees: z.array(
     z.object({
       hours_worked: z.number(),
       employee_id: z.string().uuid(),
     })
   ),
-  equipment_usage: z.array(
-    z.object({
-      equipment_id: z.string().uuid(),
-      quantity: z.number(),
-    })
-  ).optional(),
+  equipment_usage: z
+    .array(
+      z.object({
+        equipment_id: z.string().uuid(),
+        quantity: z.number(),
+      })
+    )
+    .optional(),
 });
 
 export const constructionLogResponseSchema = constructionLogSchema.extend({
@@ -52,6 +58,22 @@ export const constructionLogResponseSchema = constructionLogSchema.extend({
   date: z.date(),
   created_at: z.date(),
   updated_at: z.date(),
+  employees: z.array(
+    z.object({
+      hours_worked: z.number(),
+      employee_id: z.string().uuid(),
+      employee: z.object({ name: z.string() }),
+    })
+  ),
+  equipment_usage: z
+    .array(
+      z.object({
+        equipment_id: z.string().uuid(),
+        quantity: z.number(),
+        equipment: z.object({ name: z.string() }),
+      })
+    )
+    .optional(),
 });
 
 export const updateLogSchema = constructionLogSchema.partial();

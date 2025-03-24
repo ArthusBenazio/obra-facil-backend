@@ -2,7 +2,6 @@ import { prisma } from "../lib/prisma";
 import { ConstructionLog } from "../entities/constructionLog";
 import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
 import { attachment_type, Climate, Condition, Period } from "@prisma/client";
-import { date } from "zod";
 
 export const ConstructionLogService = {
   async createContructionLog(data: {
@@ -106,27 +105,45 @@ export const ConstructionLogService = {
     return constructionLog;
   },
 
-  async getConstructionLogById(id: string, date?: Date): Promise<ConstructionLog> {
-    console.log("id", id);
+  async getConstructionLogById(
+    id: string,
+    date?: Date
+  ): Promise<ConstructionLog> {
     const dateFilter = date ? { date: { equals: date } } : {};
 
-    const constructionLog = await prisma.construction_log.findUnique({
+    const constructionLogs = await prisma.construction_log.findUnique({
       where: { id, ...dateFilter },
       include: {
         weathers: true,
         occurrences: true,
         services: true,
         attachments: true,
-        employees: true,
-        equipment_usage: true,
+        employees: {
+          include: {
+            employee: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        equipment_usage: {
+          include: {
+            equipment: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    if (!constructionLog) {
+    if (!constructionLogs) {
       throw new BadRequestError("Diario de obra nao encontrado");
     }
 
-    return constructionLog;
+    return constructionLogs;
   },
 
   async getAllConstructionLogs(
@@ -148,7 +165,7 @@ export const ConstructionLogService = {
       where: { id: userId },
       select: { id: true, company_user: { select: { company_id: true } } },
     });
-  
+
     if (!user) {
       throw new UnauthorizedError("Usuário não encontrado.");
     }
@@ -171,8 +188,24 @@ export const ConstructionLogService = {
         occurrences: true,
         services: true,
         attachments: true,
-        employees: true,
-        equipment_usage: true,
+        employees: {
+          include: {
+            employee: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+        equipment_usage: {
+          include: {
+            equipment: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
 
