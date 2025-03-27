@@ -1,11 +1,12 @@
 import { Employee } from "../entities/employee";
 import { User } from "../entities/user";
 import { prisma } from "../lib/prisma";
+import { formatDate } from "../utils/formatedDate";
 
 type ReportItem = {
   name: string;
   daily_rate: number;
-  work_days: { hours_worked: number; created_at: Date }[];
+  work_days: { hours_worked: number; created_at: string }[];
 };
 
 export const employeeService = {
@@ -134,11 +135,11 @@ export const employeeService = {
       }
       employeeData.work_days.push({
         hours_worked: entry.hours_worked,
-        created_at: entry.created_at,
+        created_at: formatDate(entry.created_at),
       });
 
       return acc;
-  }, [] as { name: string; daily_rate: number; work_days: { hours_worked: number; created_at: Date }[] }[]);
+  }, [] as { name: string; daily_rate: number; work_days: { hours_worked: number; created_at: string }[] }[]);
   return groupedReport;
   },
 };

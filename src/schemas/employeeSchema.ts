@@ -36,7 +36,7 @@ export const reportHoursWorkedResponseSchema = z.array(
     work_days: z.array(
       z.object({
         hours_worked: z.number(),
-        created_at: z.date(),
+        created_at: z.string(),
       })
     ),
   })
