@@ -1,3 +1,5 @@
+import { user_type } from "@prisma/client";
+
 export class User {
   id: string;
   name: string;
@@ -5,10 +7,8 @@ export class User {
   phone: string;
   cpf: string;
   passwordHash: string;
-  subscriptionPlan: "free" | "basic" | "premium" | "premium_plus";
-  role: "admin" | "team" | "client";
-  userType: "person" | "business";
-  companyId?: string | null 
+  userType: user_type;
+  companyId: string;
   
   constructor(
     id: string,
@@ -17,10 +17,8 @@ export class User {
     email: string,
     passwordHash: string,
     cpf: string,
-    subscriptionPlan: "free" | "basic" | "premium" | "premium_plus",
-    role: "admin" | "team" | "client",
     userType: "person" | "business",
-    companyId?: string | null
+    companyId: string
   ) {
     this.id = id;
     this.name = name;
@@ -28,8 +26,6 @@ export class User {
     this.email = email;
     this.passwordHash = passwordHash;
     this.cpf = cpf;
-    this.subscriptionPlan = subscriptionPlan;
-    this.role = role;
     this.userType = userType;
     this.companyId = companyId
   }

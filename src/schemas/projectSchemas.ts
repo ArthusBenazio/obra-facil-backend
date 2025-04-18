@@ -1,10 +1,9 @@
-import { isValid, parse } from "date-fns";
+import { project_status } from "@prisma/client";
 import { z } from "zod";
 
-const validateBrazilianDate = (date: string) => {
-  const parsedDate = parse(date, "dd/MM/yyyy", new Date());
-  return isValid(parsedDate);
-};
+const dateSchema = z
+  .union([z.string(), z.date()])
+  .transform((val) => (typeof val === "string" ? new Date(val) : val));
 
 export const projectSchema = z.object({
   name: z.string().nonempty("O nome da obra é obrigatório."),
@@ -12,18 +11,8 @@ export const projectSchema = z.object({
   responsible: z.string().nonempty("O responsável pela obra é obrigatório."),
   engineer: z.string().optional(),
   crea_number: z.string().optional(),
-  start_date: z
-    .string()
-    .nonempty("A data de início é obrigatória.")
-    .refine(validateBrazilianDate, {
-      message: "A data de início deve ser válida.",
-    }),
-  expected_end_date: z
-    .string()
-    .nonempty("A previsão de término é obrigatória.")
-    .refine(validateBrazilianDate, {
-      message: "A previsão de término deve ser válida.",
-    }),
+  start_date: dateSchema,
+  expected_end_date: dateSchema,
   status: z.enum([
     "nao_iniciado",
     "iniciando",
@@ -35,7 +24,7 @@ export const projectSchema = z.object({
   address: z.string().nonempty("O endereço é obrigatório."),
   estimated_budget: z.number().optional(),
   client: z.string().nonempty("O cliente é obrigatório."),
-  assigned_user_id: z.string().optional().nullable(),
+  company_id: z.string(),
 });
 
 export const projectResponseSchema = z.object({
@@ -57,8 +46,7 @@ export const projectResponseSchema = z.object({
   ]),
   address: z.string(),
   estimated_budget: z.number().optional(),
-  user_id: z.string(),
-  company_id: z.string().optional().nullable(),
+  company_id: z.string(),
   assigned_user_id: z.string().optional().nullable(),
   client: z.string(),
   created_at: z.date(),
@@ -66,3 +54,11 @@ export const projectResponseSchema = z.object({
 });
 
 export type ProjectResponse = z.infer<typeof projectResponseSchema>;
+
+export const querystringSchema = z.object({
+  company_id: z.string(),
+  statusList: z.union([
+    z.nativeEnum(project_status),
+    z.array(z.nativeEnum(project_status)),
+  ]).optional(),
+});

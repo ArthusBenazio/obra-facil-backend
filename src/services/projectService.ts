@@ -1,10 +1,10 @@
+import { project_status } from "@prisma/client";
 import { Projects } from "../entities/project";
+import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
 import { prisma } from "../lib/prisma";
-import { ProjectResponse } from "../schemas/projectSchemas";
 
 interface Project {
-  id: string;
-  company_id: string | null;
+  company_id: string;
 }
 
 export const projectService = {
@@ -26,46 +26,42 @@ export const projectService = {
     address: string;
     estimated_budget?: number;
     client: string;
-    assigned_user_id?: string;
-    user_id: string;
-    company_id?: string | null;
+    company_id: string;
   }): Promise<Project> {
-    if (data.assigned_user_id) {
-      const assignedUser = await prisma.user.findUnique({
-        where: { id: data.assigned_user_id },
-      });
+    console.log("Dados recebidos no serviço para criar projeto:", data); // Depuração
 
-      if (!assignedUser) {
-        throw new Error("Usuário atribuído não encontrado.");
-      }
-    }
+    const newProject = await prisma.project.create({ data });
 
-    return prisma.project.create({ data });
+    console.log("Projeto criado no banco de dados:", newProject); // Depuração
+
+    return newProject;
   },
 
-  async getAllProjects(userId: string, companyId: string): Promise<Projects[]> {
+  async getAllProjects(
+    companyId: string,
+    statusList?: project_status[]
+  ): Promise<Projects[]> {
+    console.log("🔎 Buscando todos os projetos...");
+    console.log("➡️ companyId:", companyId);
+    console.log("➡️ statusList:", statusList);
     const projects = await prisma.project.findMany({
       where: {
-        OR: [
-          { company_id: companyId },
-          { user_id: userId },
-          { assigned_user_id: userId },
-        ],
+        company_id: companyId,
+        ...(statusList ? { status: { in: statusList } } : {}),
       },
     });
 
+    console.log("➡️ Projetos encontrados:", projects);
+
     return projects.map((project) => {
       if (
-        ![
-          "nao_iniciado",
-          "iniciando",
-          "em_andamento",
-          "concluido",
-          "cancelado",
-          "em_espera",
-        ].includes(project.status)
+        !Object.values(project_status).includes(
+          project.status as project_status
+        )
       ) {
-        throw new Error(`Status inválido encontrado: ${project.status}`);
+        throw new BadRequestError(
+          `Status inválido encontrado: ${project.status}`
+        );
       }
 
       return new Projects(
@@ -75,11 +71,10 @@ export const projectService = {
         project.responsible,
         project.start_date,
         project.expected_end_date,
-        project.status as ProjectResponse["status"],
+        project.status as project_status,
         project.address,
         project.client,
         project.company_id ?? "",
-        project.user_id,
         project.created_at,
         project.updated_at,
         project.engineer ?? "",
@@ -89,26 +84,26 @@ export const projectService = {
     });
   },
 
-  async getProjectById(
-    id: string,
-    userId: string,
-    companyId?: string | null
-  ): Promise<Projects> {
-    const project = await prisma.project.findFirst({
-      where: {
-        OR: [
-          { company_id: companyId },
-          { user_id: userId },
-          { assigned_user_id: userId },
-        ],
+  async getProjectById(id: string, companyIds: string[]): Promise<Projects> {
+    const project = await prisma.project.findUnique({
+      where: { id },
+      include: {
+        company: true,
       },
     });
 
     if (!project) {
-      throw new Error(
-        "Projeto não encontrado ou você não tem permissão para acessá-lo."
+      throw new BadRequestError("Projeto não encontrado.");
+    }
+
+    const hasPermission = companyIds.includes(project.company_id);
+
+    if (!hasPermission) {
+      throw new UnauthorizedError(
+        "Você não tem permissão para acessar este projeto."
       );
     }
+
     return new Projects(
       project.id,
       project.name,
@@ -119,8 +114,7 @@ export const projectService = {
       project.status,
       project.address,
       project.client,
-      project.company_id ?? "",
-      project.user_id,
+      project.company_id,
       project.created_at,
       project.updated_at,
       project.engineer ?? "",
@@ -149,21 +143,9 @@ export const projectService = {
       address: string;
       estimated_budget?: number;
       client: string;
-      user_id: string;
-      assigned_user_id?: string;
-      company_id: string | null;
+      company_id: string;
     }
   ): Promise<Projects> {
-    if (data.assigned_user_id) {
-      const assignedUser = await prisma.user.findUnique({
-        where: { id: data.assigned_user_id },
-      });
-
-      if (!assignedUser) {
-        throw new Error("Usuário atribuído não encontrado.");
-      }
-    }
-
     const project = await prisma.project.update({
       where: {
         id,
@@ -172,7 +154,7 @@ export const projectService = {
     });
 
     if (!project) {
-      throw new Error(`Projeto com o id ${id} não encontrado.`);
+      throw new BadRequestError(`Projeto com o id ${id} não encontrado.`);
     }
 
     return new Projects(
@@ -192,7 +174,6 @@ export const projectService = {
       project.address,
       project.client,
       project.company_id ?? "",
-      project.user_id,
       project.created_at,
       project.updated_at,
       project.engineer ?? "",
@@ -202,11 +183,15 @@ export const projectService = {
   },
 
   async deleteProject(id: string): Promise<void> {
-    await prisma.project.delete({
+    const project = await prisma.project.delete({
       where: {
         id,
       },
     });
+
+    if (!project) {
+      throw new BadRequestError(`Projeto com o id ${id} não encontrado.`);
+    }
 
     return;
   },

@@ -1,14 +1,19 @@
 import { usersService } from "../services/userService";
 import { UserResponse } from "../types/userTypes";
-import { BadRequestError } from "../helpers/api-erros";
+import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
 import {
-  registerResponseSchema,
+  addUserToCompanyResponseSchema,
+  addUserToCompanySchema,
+  changePasswordResponseSchema,
+  changePasswordSchema,
+  querystringGetProfilesSchema,
   registerSchema,
   updateSchema,
+  updateSchemaRespose,
   userResponseSchema,
 } from "../schemas/userSchemas";
 import { z } from "zod";
-import { authMiddleware } from "../middlewares/authMiddleware";
+import { authMiddleware, TokenPayload } from "../middlewares/authMiddleware";
 import { FastifyRequest } from "fastify";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 
@@ -23,7 +28,7 @@ export async function userController(server: FastifyTypedInstance) {
       schema: {
         body: registerSchema,
         response: {
-          201: registerResponseSchema,
+          201: userResponseSchema,
         },
         description: "Cria um novo usuário.",
         tags: ["User"],
@@ -37,24 +42,23 @@ export async function userController(server: FastifyTypedInstance) {
         throw new BadRequestError("Dados inválidos.");
       }
 
-      const userResponse: UserResponse & { company?: any } = {
+      const userResponse: UserResponse = {
         id: newUser.id,
         name: newUser.name,
         phone: newUser.phone,
         cpf: newUser.cpf,
         email: newUser.email,
-        subscriptionPlan: newUser.subscriptionPlan,
-        role: newUser.role,
-        userType: newUser.userType,        
-      };   
-
-      if (newUser.userType === "business" && "company" in newUser) {
-        userResponse.company = {
-          companyName: newUser.company.company_name,
-          positionCompany: newUser.company.position_company,
-          cnpj: newUser.company.cnpj,
-        };
-      }
+        userType: newUser.userType,
+        companies: [
+          {
+            id: newUser.company?.id || "",
+            companyName: newUser.company?.companyName || "",
+            positionCompany: newUser.company?.positionCompany || "",
+            cnpj: newUser.company?.cnpj || "",
+            subscriptionPlan: newUser.company?.subscriptionPlan || "free",
+          },
+        ],
+      };
 
       return reply.status(201).send(userResponse);
     }
@@ -63,16 +67,20 @@ export async function userController(server: FastifyTypedInstance) {
   server.get(
     "/profiles",
     {
+      preHandler: [authMiddleware],
       schema: {
-        description: "Lista todos os usuários registrados.",
-        tags: ["User"],
+        querystring: querystringGetProfilesSchema,
         response: {
           200: z.array(userResponseSchema),
         },
+        description: "Lista todos os usuários registrados.",
+        tags: ["User"],
       },
     },
     async (request, reply) => {
-      const users = await usersService.getAllUsers();
+      const companyId = request.query.company_id;
+
+      const users = await usersService.getAllUsers(companyId);
 
       return reply.status(200).send(users);
     }
@@ -99,27 +107,80 @@ export async function userController(server: FastifyTypedInstance) {
     }
   );
 
-  server.put(
+  server.patch(
     "/profile/:id",
     {
       preHandler: [authMiddleware],
       schema: {
         body: updateSchema,
         response: {
-          200: userResponseSchema,
+          200: updateSchemaRespose,
         },
         description: "Atualiza informações do usuário.",
         tags: ["User"],
       },
     },
     async (request: FastifyRequest<{ Params: ProfileParams }>, reply) => {
-      
       const body = updateSchema.parse(request.body);
-  
-      const updatedUser = await usersService.updateUser(request.params.id, body);
-  
+
+      const updatedUser = await usersService.updateUser(
+        request.params.id,
+        body
+      );
+
       return reply.status(200).send(updatedUser);
     }
   );
+
+  server.post(
+    "/profile/add-user",
+    {
+      preHandler: [authMiddleware],
+      schema: {
+        body: addUserToCompanySchema,
+        response: {
+          201: addUserToCompanyResponseSchema,
+        },
+        description: "Um usuário adiciona outro usuário a uma empresa.",
+        tags: ["User"],
+      },
+    },
+    async (request, reply) => {
+
+      const { userId } = request.user as TokenPayload;
+
+      const body = addUserToCompanySchema.parse(request.body);
+      const result = await usersService.addUserToCompany({...body, userId});
+
+      return reply.status(201).send(result);
+    }
+  );
+
+  server.patch(
+    '/profile/password',
+    {
+      preHandler: [authMiddleware],
+      schema: {
+        body: changePasswordSchema,
+        response: {
+          200: changePasswordResponseSchema
+        },
+        description: "Altera a senha do usuário autenticado.",
+        tags: ["User"],
+      },
+    },
+    async (request, reply) => {
+      const { currentPassword, newPassword } = request.body;
+      const { userId } = request.user as TokenPayload;
   
+      await usersService.changePassword(
+        userId,
+        currentPassword,
+        newPassword
+      );
+      
+      return reply.status(200).send({ success: true });
+
+    }
+  );
 }

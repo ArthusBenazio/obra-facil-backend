@@ -1,3 +1,17 @@
-import { User } from './../entities/user';
+import { subscription_plan, user_type } from "@prisma/client";
 
-export type UserResponse = Omit<User, 'passwordHash'> ;
+export type UserResponse = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  cpf: string;
+  userType: user_type;
+  companies: {
+    id: string;
+    companyName: string;
+    cnpj?: string;
+    positionCompany?: string;
+    subscriptionPlan: subscription_plan;
+  } [];
+};
