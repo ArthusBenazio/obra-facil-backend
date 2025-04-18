@@ -258,7 +258,6 @@ enum attachment_type {
 
 enum project_status {
   nao_iniciado
-  iniciando
   em_andamento
   concluido
   cancelado
