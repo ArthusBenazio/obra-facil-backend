@@ -15,7 +15,6 @@ export const projectSchema = z.object({
   expected_end_date: dateSchema,
   status: z.enum([
     "nao_iniciado",
-    "iniciando",
     "em_andamento",
     "concluido",
     "cancelado",
@@ -38,7 +37,6 @@ export const projectResponseSchema = z.object({
   expected_end_date: z.date(),
   status: z.enum([
     "nao_iniciado",
-    "iniciando",
     "em_andamento",
     "concluido",
     "cancelado",

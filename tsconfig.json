@@ -11,8 +11,8 @@
     "allowJs": true,               // Permitir arquivos .js
     "resolveJsonModule": true,     // Permitir importação de arquivos JSON
     "strict": true,
-    "noEmit": true,                 // Habilitar todas as verificações de tipo estritas
-    "allowImportingTsExtensions": true,
+    // "allowImportingTsExtensions": true,
+    // "noEmit": false
   },
   "include": ["src/**/*"],         // Incluir todos os arquivos no diretório 'src'
   "exclude": ["node_modules", "./dist"],      // Excluir 'node_modules'

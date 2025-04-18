@@ -8,7 +8,6 @@ export class Projects {
     public expected_end_date: Date,
     public status:
       | "nao_iniciado"
-      | "iniciando"
       | "em_andamento"
       | "concluido"
       | "cancelado"
