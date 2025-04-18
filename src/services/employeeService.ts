@@ -1,3 +1,4 @@
+import { employee_status } from "@prisma/client";
 import { Employee } from "../entities/employee";
 import { User } from "../entities/user";
 import { prisma } from "../lib/prisma";
@@ -38,10 +39,11 @@ export const employeeService = {
     });
   },
 
-  async getAllEmployees(user: User): Promise<Employee[]> {
+  async getAllEmployees(companyId?: string, status?: employee_status): Promise<Employee[]> {
     const employees = await prisma.employee.findMany({
       where: {
-        AND: [{ company_id: user.companyId }],
+        company_id: companyId,
+        status: status ? status: undefined,
       },
     });
     return employees;
@@ -77,13 +79,19 @@ export const employeeService = {
     start_date?: string,
     end_date?: string
   ): Promise<any> {
-    let startDate: Date | undefined;
-    let endDate: Date = new Date();
+    const parseDate = (dateStr: string, endOfDay = false): Date => {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        throw new Error(`Formato de data inválido: ${dateStr}. Use YYYY-MM-DD`);
+      }
+      if (endOfDay) {
+        date.setUTCHours(23, 59, 59, 999);
+      } else {
+        date.setUTCHours(0, 0, 0, 0);
+      }
+      return date;
+    };
 
-    if (start_date && end_date) {
-      startDate = new Date(start_date);
-      endDate = new Date(end_date);
-    } 
     const project = await prisma.project.findUnique({
       where: {
         id: project_id,
@@ -92,28 +100,39 @@ export const employeeService = {
         company_id: true,
       },
     });
-  
+
     if (!project) {
       throw new Error("Projeto não encontrado");
     }
-    const report = await prisma.construction_log_employee.findMany({
-      where: {
-        employee: {
-          company_id: project.company_id
-        },
-        construction_log: {
-              project_id: project_id 
-        },
-        created_at: {
-          gte: startDate,
-          lte: endDate,
-        },
+
+    const dateFilter: any = {};
+
+    if (start_date) {
+      dateFilter.gte = parseDate(start_date);
+    }
+
+    if (end_date) {
+      dateFilter.lte = parseDate(end_date, true);
+    }
+
+    const whereClause = {
+      employee: {
+        company_id: project.company_id,
       },
+      construction_log: {
+        project_id,
+      },
+      ...(Object.keys(dateFilter).length > 0 && { created_at: dateFilter }),
+    };
+
+    const report = await prisma.construction_log_employee.findMany({
+      where: whereClause,
       select: {
         employee: {
           select: {
             name: true,
             daily_rate: true,
+            company_id: true,
           },
         },
         hours_worked: true,
@@ -121,13 +140,13 @@ export const employeeService = {
       },
       orderBy: {
         created_at: "asc",
-      }
+      },
     });
 
     const groupedReport = report.reduce<ReportItem[]>((acc, entry) => {
       const { name, daily_rate } = entry.employee;
 
-      let employeeData = acc.find(e => e.name === name);
+      let employeeData = acc.find((e) => e.name === name);
 
       if (!employeeData) {
         employeeData = { name, daily_rate, work_days: [] };
@@ -139,7 +158,7 @@ export const employeeService = {
       });
 
       return acc;
-  }, [] as { name: string; daily_rate: number; work_days: { hours_worked: number; created_at: string }[] }[]);
-  return groupedReport;
+    }, [] as { name: string; daily_rate: number; work_days: { hours_worked: number; created_at: string }[] }[]);
+    return groupedReport;
   },
 };

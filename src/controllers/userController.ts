@@ -1,11 +1,15 @@
 import { usersService } from "../services/userService";
 import { UserResponse } from "../types/userTypes";
-import { BadRequestError } from "../helpers/api-erros";
+import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
 import {
   addUserToCompanyResponseSchema,
   addUserToCompanySchema,
+  changePasswordResponseSchema,
+  changePasswordSchema,
+  querystringGetProfilesSchema,
   registerSchema,
   updateSchema,
+  updateSchemaRespose,
   userResponseSchema,
 } from "../schemas/userSchemas";
 import { z } from "zod";
@@ -63,16 +67,20 @@ export async function userController(server: FastifyTypedInstance) {
   server.get(
     "/profiles",
     {
+      preHandler: [authMiddleware],
       schema: {
-        description: "Lista todos os usuários registrados.",
-        tags: ["User"],
+        querystring: querystringGetProfilesSchema,
         response: {
           200: z.array(userResponseSchema),
         },
+        description: "Lista todos os usuários registrados.",
+        tags: ["User"],
       },
     },
     async (request, reply) => {
-      const users = await usersService.getAllUsers();
+      const companyId = request.query.company_id;
+
+      const users = await usersService.getAllUsers(companyId);
 
       return reply.status(200).send(users);
     }
@@ -99,14 +107,14 @@ export async function userController(server: FastifyTypedInstance) {
     }
   );
 
-  server.put(
+  server.patch(
     "/profile/:id",
     {
       preHandler: [authMiddleware],
       schema: {
         body: updateSchema,
         response: {
-          200: userResponseSchema,
+          200: updateSchemaRespose,
         },
         description: "Atualiza informações do usuário.",
         tags: ["User"],
@@ -145,6 +153,34 @@ export async function userController(server: FastifyTypedInstance) {
       const result = await usersService.addUserToCompany({...body, userId});
 
       return reply.status(201).send(result);
+    }
+  );
+
+  server.patch(
+    '/profile/password',
+    {
+      preHandler: [authMiddleware],
+      schema: {
+        body: changePasswordSchema,
+        response: {
+          200: changePasswordResponseSchema
+        },
+        description: "Altera a senha do usuário autenticado.",
+        tags: ["User"],
+      },
+    },
+    async (request, reply) => {
+      const { currentPassword, newPassword } = request.body;
+      const { userId } = request.user as TokenPayload;
+  
+      await usersService.changePassword(
+        userId,
+        currentPassword,
+        newPassword
+      );
+      
+      return reply.status(200).send({ success: true });
+
     }
   );
 }

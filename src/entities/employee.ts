@@ -1,9 +1,11 @@
+import { employee_status } from "@prisma/client";
+
 export class Employee {
   id: string;
   name: string;
   role: string;
   daily_rate: number;
-  status: "ativo" | "inativo";
+  status: employee_status;
   cpf: string;
   pix_key: string;
   company_id: string;
@@ -15,7 +17,7 @@ export class Employee {
     name: string,
     role: string,
     daily_rate: number,
-    status: "ativo" | "inativo",
+    status: employee_status,
     cpf: string,
     pix_key: string,
     company_id: string,

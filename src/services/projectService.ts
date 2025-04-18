@@ -1,7 +1,7 @@
+import { project_status } from "@prisma/client";
 import { Projects } from "../entities/project";
 import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
 import { prisma } from "../lib/prisma";
-import { ProjectResponse } from "../schemas/projectSchemas";
 
 interface Project {
   company_id: string;
@@ -37,21 +37,27 @@ export const projectService = {
     return newProject;
   },
 
-  async getAllProjects(companyId: string): Promise<Projects[]> {
+  async getAllProjects(
+    companyId: string,
+    statusList?: project_status[]
+  ): Promise<Projects[]> {
+    console.log("🔎 Buscando todos os projetos...");
+    console.log("➡️ companyId:", companyId);
+    console.log("➡️ statusList:", statusList);
     const projects = await prisma.project.findMany({
-      where: companyId ? { company_id: companyId } : {},
+      where: {
+        company_id: companyId,
+        ...(statusList ? { status: { in: statusList } } : {}),
+      },
     });
+
+    console.log("➡️ Projetos encontrados:", projects);
 
     return projects.map((project) => {
       if (
-        ![
-          "nao_iniciado",
-          "iniciando",
-          "em_andamento",
-          "concluido",
-          "cancelado",
-          "em_espera",
-        ].includes(project.status)
+        !Object.values(project_status).includes(
+          project.status as project_status
+        )
       ) {
         throw new BadRequestError(
           `Status inválido encontrado: ${project.status}`
@@ -65,7 +71,7 @@ export const projectService = {
         project.responsible,
         project.start_date,
         project.expected_end_date,
-        project.status as ProjectResponse["status"],
+        project.status as project_status,
         project.address,
         project.client,
         project.company_id ?? "",
@@ -78,10 +84,7 @@ export const projectService = {
     });
   },
 
-  async getProjectById(
-    id: string,
-    companyIds: string[]
-  ): Promise<Projects> {
+  async getProjectById(id: string, companyIds: string[]): Promise<Projects> {
     const project = await prisma.project.findUnique({
       where: { id },
       include: {

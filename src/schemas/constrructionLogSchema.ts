@@ -53,7 +53,14 @@ export const constructionLogSchema = z.object({
     .optional(),
 });
 
-export const constructionLogResponseSchema = constructionLogSchema.extend({
+export const ConstructionLogResponseSchema = constructionLogSchema.extend({
+  id: z.string(),
+  date: z.date(),
+  created_at: z.date(),
+  updated_at: z.date(),
+});
+
+export const getConstructionLogResponseSchema = constructionLogSchema.extend({
   id: z.string(),
   date: z.date(),
   created_at: z.date(),
@@ -62,7 +69,7 @@ export const constructionLogResponseSchema = constructionLogSchema.extend({
     z.object({
       hours_worked: z.number(),
       employee_id: z.string().uuid(),
-      employee: z.object({ name: z.string() }),
+      employee: z.object({ name: z.string(), role: z.string().optional() }),
     })
   ),
   equipment_usage: z
@@ -80,7 +87,8 @@ export const updateLogSchema = constructionLogSchema.partial();
 
 export const getConstructionLogQuerySchema = z.object({
   project_id: z.string(),
-  date: z.string().optional(),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
 });
 
 export const getConstructionLogByIdQuerySchema = z.object({

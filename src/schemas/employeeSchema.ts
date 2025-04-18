@@ -7,7 +7,7 @@ export const registerEmployeeSchema = z.object({
   daily_rate: z.number(),
   status: z.enum(["ativo", "inativo"]),
   cpf: z.string().min(11, "CPF deve ter pelo menos 11 caracteres"),
-  pix_key: z.string().min(11, "Chave PIX deve ter pelo menos 11 caracteres"),
+  pix_key: z.string(),
   company_id: z.string(),
 });
 
@@ -47,3 +47,8 @@ export const querystring = z.object({
   start_date: z.string().optional(),
   end_date: z.string().optional(),
 });
+
+export const querystringGetAll = z.object({
+  company_id: z.string(),
+  status: z.enum(["ativo", "inativo"]).optional(),
+})

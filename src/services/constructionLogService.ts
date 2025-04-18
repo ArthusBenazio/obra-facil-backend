@@ -149,9 +149,22 @@ export const ConstructionLogService = {
   async getAllConstructionLogs(
     projectId: string,
     userId: string,
-    date?: Date
+    start_date?: string,
+    end_date?: string
   ): Promise<ConstructionLog[]> {
-    console.log("projectId", projectId);
+    const parseDate = (dateStr: string, endOfDay = false): Date => {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        throw new Error(`Formato de data inválido: ${dateStr}. Use YYYY-MM-DD`);
+      }
+      if (endOfDay) {
+        date.setUTCHours(23, 59, 59, 999);
+      } else {
+        date.setUTCHours(0, 0, 0, 0);
+      }
+      return date;
+    };
+
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       select: { id: true, company_id: true },
@@ -159,6 +172,16 @@ export const ConstructionLogService = {
 
     if (!project) {
       throw new BadRequestError("Projeto não encontrado.");
+    }
+
+    const GetDateFilter: any = {};
+
+    if (start_date) {
+      GetDateFilter.gte = parseDate(start_date);
+    }
+
+    if (end_date) {
+      GetDateFilter.lte = parseDate(end_date, true);
     }
 
     const user = await prisma.user.findUnique({
@@ -170,7 +193,6 @@ export const ConstructionLogService = {
       throw new UnauthorizedError("Usuário não encontrado.");
     }
 
-    // Verifica se o usuário tem acesso ao projeto
     const userCompanyIds = user.company_user.map((cu) => cu.company_id);
     const hasAccess = userCompanyIds.includes(project.company_id);
 
@@ -178,14 +200,24 @@ export const ConstructionLogService = {
       throw new UnauthorizedError("Você não tem acesso a este projeto.");
     }
 
-    const dateFilter = date ? { date } : {};
+    const whereClause = {
+      project_id: projectId,
+      ...(Object.keys(GetDateFilter).length > 0 && { date: GetDateFilter }),
+    };
 
-    // Retorna os diários apenas da obra específica
     const constructionLogs = await prisma.construction_log.findMany({
-      where: { project_id: projectId, ...dateFilter },
+      where: whereClause,
       include: {
         weathers: true,
-        occurrences: true,
+        occurrences: {
+          include: {
+            employee: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
         services: true,
         attachments: true,
         employees: {
@@ -193,6 +225,7 @@ export const ConstructionLogService = {
             employee: {
               select: {
                 name: true,
+                role: true,
               },
             },
           },
@@ -207,9 +240,34 @@ export const ConstructionLogService = {
           },
         },
       },
+      orderBy: { date: "asc" },
     });
 
-    return constructionLogs;
+    return constructionLogs.map((log) => ({
+      ...log,
+      employees:
+        log.employees?.map((emp) => ({
+          hours_worked: emp.hours_worked,
+          employee_id: emp.employee_id,
+          comments: emp.comments || null,
+          employee: emp.employee
+            ? {
+                name: emp.employee.name,
+                role: emp.employee.role || null,
+              }
+            : null,
+        })) || [],
+      equipment_usage:
+        log.equipment_usage?.map((eq) => ({
+          equipment_id: eq.equipment_id,
+          quantity: eq.quantity,
+          equipment: eq.equipment
+            ? {
+                name: eq.equipment.name,
+              }
+            : null,
+        })) || [],
+    }));
   },
 
   async updateConstructionLog(
@@ -236,98 +294,117 @@ export const ConstructionLogService = {
     });
 
     if (!constructionLog) {
-      throw new BadRequestError("Diario de obra não encontrado");
+      throw new BadRequestError("Diário de obra não encontrado");
     }
 
-    const updatedConstructionLog = await prisma.construction_log.update({
-      where: { id },
-      data: {
-        ...(data.date && { date: data.date }),
-        ...(data.project_id && {
-          project: { connect: { id: data.project_id } },
-        }),
-        ...(data.tasks && { tasks: data.tasks }),
-        ...(data.comments && { comments: data.comments }),
-        weathers: data.weathers
-          ? {
-              create: data.weathers.map((weather) => ({
-                period: weather.period as Period,
-                climate: weather.climate as Climate,
-                condition: weather.condition as Condition,
-              })),
-            }
-          : undefined,
-        occurrences: data.occurrences
-          ? {
-              create: data.occurrences.map((occurrence) => ({
-                type: occurrence.type,
-                description: occurrence.description,
-                employee_id: occurrence.employee_id
-                  ? { connect: { id: occurrence.employee_id } }
-                  : undefined,
-              })),
-            }
-          : undefined,
-        services: data.services
-          ? {
-              create: data.services.map((service) => ({
-                name: service.name,
-                description: service.description,
-                value: service.value,
-              })),
-            }
-          : undefined,
-        attachments: data.attachments
-          ? {
-              create: data.attachments.map((attachment) => ({
-                url: attachment.url,
-                type: attachment.type,
-              })),
-            }
-          : undefined,
-        employees: data.employees
-          ? {
-              create: await Promise.all(
-                data.employees.map(async (employee) => {
-                  const existingEmployee = await prisma.employee.findUnique({
-                    where: { id: employee.employee_id },
-                    select: { role: true },
-                  });
+    const transaction = await prisma.$transaction(async (prisma) => {
+      await prisma.weather.deleteMany({ where: { construction_log_id: id } });
+      await prisma.occurrence.deleteMany({
+        where: { construction_log_id: id },
+      });
+      await prisma.service.deleteMany({ where: { construction_log_id: id } });
+      await prisma.attachment.deleteMany({
+        where: { construction_log_id: id },
+      });
+      await prisma.construction_log_employee.deleteMany({
+        where: { construction_log_id: id },
+      });
+      await prisma.equipment_usage.deleteMany({
+        where: { construction_log_id: id },
+      });
 
-                  if (!existingEmployee) {
-                    throw new BadRequestError(
-                      `Funcionário com ID ${employee.employee_id} não encontrado`
-                    );
-                  }
+      const updated = await prisma.construction_log.update({
+        where: { id },
+        data: {
+          ...(data.date && { date: data.date }),
+          ...(data.project_id && {
+            project: { connect: { id: data.project_id } },
+          }),
+          ...(data.tasks !== undefined && { tasks: data.tasks }),
+          ...(data.comments !== undefined && { comments: data.comments }),
+          weathers: data.weathers
+            ? {
+                create: data.weathers.map((weather) => ({
+                  period: weather.period as Period,
+                  climate: weather.climate as Climate,
+                  condition: weather.condition as Condition,
+                })),
+              }
+            : undefined,
+          occurrences: data.occurrences
+            ? {
+                create: data.occurrences.map((occurrence) => ({
+                  type: occurrence.type,
+                  description: occurrence.description,
+                  employee: occurrence.employee_id
+                    ? { connect: { id: occurrence.employee_id } }
+                    : undefined,
+                })),
+              }
+            : undefined,
+          services: data.services
+            ? {
+                create: data.services.map((service) => ({
+                  name: service.name,
+                  description: service.description,
+                  value: service.value,
+                })),
+              }
+            : undefined,
+          attachments: data.attachments
+            ? {
+                create: data.attachments.map((attachment) => ({
+                  url: attachment.url,
+                  type: attachment.type,
+                })),
+              }
+            : undefined,
+          employees: data.employees
+            ? {
+                create: await Promise.all(
+                  data.employees.map(async (employee) => {
+                    const existingEmployee = await prisma.employee.findUnique({
+                      where: { id: employee.employee_id },
+                      select: { role: true },
+                    });
 
-                  return {
-                    hours_worked: employee.hours_worked,
-                    role: existingEmployee.role,
-                    employee: { connect: { id: employee.employee_id } },
-                  };
-                })
-              ),
-            }
-          : undefined,
-        equipment_usage: data.equipment_usage
-          ? {
-              create: data.equipment_usage.map((usage) => ({
-                equipment: { connect: { id: usage.equipment_id } },
-                quantity: usage.quantity,
-              })),
-            }
-          : undefined,
-      },
-      include: {
-        weathers: true,
-        occurrences: true,
-        services: true,
-        attachments: true,
-        employees: true,
-        equipment_usage: true,
-      },
+                    if (!existingEmployee) {
+                      throw new BadRequestError(
+                        `Funcionário com ID ${employee.employee_id} não encontrado`
+                      );
+                    }
+
+                    return {
+                      hours_worked: employee.hours_worked,
+                      role: existingEmployee.role,
+                      employee: { connect: { id: employee.employee_id } },
+                    };
+                  })
+                ),
+              }
+            : undefined,
+          equipment_usage: data.equipment_usage
+            ? {
+                create: data.equipment_usage.map((usage) => ({
+                  equipment: { connect: { id: usage.equipment_id } },
+                  quantity: usage.quantity,
+                })),
+              }
+            : undefined,
+        },
+        include: {
+          weathers: true,
+          occurrences: true,
+          services: true,
+          attachments: true,
+          employees: true,
+          equipment_usage: true,
+        },
+      });
+
+      return updated;
     });
 
-    return updatedConstructionLog;
+    return transaction;
   },
 };

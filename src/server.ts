@@ -11,6 +11,7 @@ import {
   validatorCompiler,
   ZodTypeProvider,
 } from "fastify-type-provider-zod";
+import { number } from "zod";
 
 const server = fastify().withTypeProvider<ZodTypeProvider>();
 
@@ -86,7 +87,7 @@ server.register(routes);
 
 server.setErrorHandler(errorHandler);
 
-server.listen({ port: 5000, host: "0.0.0.0" }, (err, address) => {
+server.listen({ port: process.env.PORT ? Number(process.env.PORT) : 5000, host: "0.0.0.0" }, (err, address) => {
   if (err) {
     console.log(err);
     process.exit(1);

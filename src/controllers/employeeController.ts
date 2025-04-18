@@ -1,3 +1,4 @@
+import { employee_status } from "@prisma/client";
 import { User } from "../entities/user";
 import { UnauthorizedError } from "../helpers/api-erros";
 import { authMiddleware } from "../middlewares/authMiddleware";
@@ -5,6 +6,7 @@ import {
   deleteEmployeeResponseSchema,
   employeeResponseSchema,
   querystring,
+  querystringGetAll,
   registerEmployeeSchema,
   reportHoursWorkedResponseSchema,
 } from "../schemas/employeeSchema";
@@ -41,6 +43,7 @@ export async function employeeController(server: FastifyTypedInstance) {
     {
       preHandler: [authMiddleware],
       schema: {
+        querystring: querystringGetAll,
         response: {
           200: employeeResponseSchema.array(),
         },
@@ -50,13 +53,10 @@ export async function employeeController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-      const user = request.user as User;
+      const companyId = request.query.company_id as string;
+      const status = request.query.status as employee_status;
 
-      if (!user) {
-        throw new UnauthorizedError("Usuário não autenticado.");
-      }
-
-      const employees = await employeeService.getAllEmployees(user);
+      const employees = await employeeService.getAllEmployees(companyId, status);
       const employeesResponse = employeeResponseSchema.array().parse(employees);
       return reply.status(200).send(employeesResponse);
     }
@@ -130,7 +130,7 @@ export async function employeeController(server: FastifyTypedInstance) {
   );
 
   server.get(
-    "/employees/report",
+    "/employees/report", 
     {
       preHandler: [authMiddleware],
       schema: {

@@ -5,10 +5,12 @@ import {
   ProjectResponse,
   projectResponseSchema,
   projectSchema,
+  querystringSchema,
 } from "../schemas/projectSchemas";
 import { projectService } from "../services/projectService";
 import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
 import { FastifyRequest } from "fastify";
+import { project_status } from "@prisma/client";
 
 interface User {
   companyIds: string;
@@ -33,11 +35,12 @@ export function projectController(server: FastifyTypedInstance) {
       },
     },
     async (request, reply) => {
-
       const user = request.user as TokenPayload;
 
       if (!user || !user.companyIds || user.companyIds.length === 0) {
-        throw new UnauthorizedError("Usuário não autenticado ou sem empresas associadas.");
+        throw new UnauthorizedError(
+          "Usuário não autenticado ou sem empresas associadas."
+        );
       }
 
       const body = projectSchema.parse(request.body);
@@ -74,15 +77,23 @@ export function projectController(server: FastifyTypedInstance) {
     {
       preHandler: [authMiddleware],
       schema: {
-        description: "Retorna todas as obras de um usuário ou empresa",
-        tags: ["Obras"],
+        querystring: querystringSchema,
         response: {
           200: z.array(projectResponseSchema),
         },
+        tags: ["Obras"],
+        description: "Retorna todas as obras de um usuário ou empresa",
       },
     },
-    async (request: FastifyRequest<{ Querystring: CompanyQuery }>, reply) => {
+    async (request, reply) => {
       const user = request.user as TokenPayload;
+      let companyId = request.query.company_id;
+      const rawStatus = request.query.statusList;
+      const statusList = Array.isArray(rawStatus)
+        ? rawStatus
+        : rawStatus
+        ? [rawStatus]
+        : undefined;
 
       if (!user) {
         throw new UnauthorizedError("Usuário não autenticado.");
@@ -90,13 +101,11 @@ export function projectController(server: FastifyTypedInstance) {
 
       const { companyIds } = user;
 
-      let companyId = request.query.companyId as string;
-
       if (!companyId && companyIds.length === 1) {
         companyId = companyIds[0];
       }
 
-      const projects = await projectService.getAllProjects(companyId);
+      const projects = await projectService.getAllProjects(companyId, statusList);
 
       const formattedProjects = projects.map((project) => ({
         ...project,
@@ -124,7 +133,9 @@ export function projectController(server: FastifyTypedInstance) {
       const user = request.user as TokenPayload;
 
       if (!user || !user.companyIds || user.companyIds.length === 0) {
-        throw new UnauthorizedError("Usuário não autenticado ou sem empresas associadas.");
+        throw new UnauthorizedError(
+          "Usuário não autenticado ou sem empresas associadas."
+        );
       }
 
       const project = await projectService.getProjectById(id, user.companyIds);
@@ -151,7 +162,9 @@ export function projectController(server: FastifyTypedInstance) {
       const user = request.user as TokenPayload;
 
       if (!user || !user.companyIds || user.companyIds.length === 0) {
-        throw new UnauthorizedError("Usuário não autenticado ou sem empresas associadas.");
+        throw new UnauthorizedError(
+          "Usuário não autenticado ou sem empresas associadas."
+        );
       }
 
       const body = projectSchema.parse(request.body);

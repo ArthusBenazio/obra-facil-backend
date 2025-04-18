@@ -1,8 +1,9 @@
+import { project_status } from "@prisma/client";
 import { z } from "zod";
 
-const dateSchema = z.union([z.string(), z.date()]).transform((val) =>
-  typeof val === "string" ? new Date(val) : val
-);
+const dateSchema = z
+  .union([z.string(), z.date()])
+  .transform((val) => (typeof val === "string" ? new Date(val) : val));
 
 export const projectSchema = z.object({
   name: z.string().nonempty("O nome da obra é obrigatório."),
@@ -53,3 +54,11 @@ export const projectResponseSchema = z.object({
 });
 
 export type ProjectResponse = z.infer<typeof projectResponseSchema>;
+
+export const querystringSchema = z.object({
+  company_id: z.string(),
+  statusList: z.union([
+    z.nativeEnum(project_status),
+    z.array(z.nativeEnum(project_status)),
+  ]).optional(),
+});

@@ -3,13 +3,27 @@ import { prisma } from "../lib/prisma";
 import { z } from "zod";
 import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
 import { UserResponse } from "../types/userTypes";
-import { addUserToCompanySchema, registerSchema } from "../schemas/userSchemas";
-import { subscription_plan, user_role } from "@prisma/client";
+import {
+  addUserToCompanySchema,
+  registerSchema,
+  updateSchema,
+} from "../schemas/userSchemas";
+import { user_role } from "@prisma/client";
 import { generateRandomPassword } from "../utils/generateRandomPassword";
 import { sendEmail } from "./emailService";
+import { emailTemplate } from "../utils/emailTemplate";
+import {
+  PASSWORD_REGEX,
+  PASSWORD_REQUIREMENTS,
+  validatePassword,
+} from "../utils/validators";
 
 export const usersService = {
   async registerUser(body: z.infer<typeof registerSchema>) {
+    if (!PASSWORD_REGEX.test(body.password)) {
+      throw new BadRequestError(PASSWORD_REQUIREMENTS);
+    }
+
     const existingUser = await prisma.user.findUnique({
       where: { email: body.email },
     });
@@ -24,6 +38,22 @@ export const usersService = {
 
     if (existingCpf) {
       throw new BadRequestError("CPF já registrado.");
+    }
+
+    if (body.userType === "business") {
+      if (!body.companyName || !body.cnpj || !body.positionCompany) {
+        throw new BadRequestError(
+          "Campos companyName, cnpj e positionCompany são obrigatórios para usuários do tipo 'business'."
+        );
+      }
+
+      const existingCompany = await prisma.company.findUnique({
+        where: { cnpj: body.cnpj },
+      });
+
+      if (existingCompany) {
+        throw new BadRequestError("Empresa já cadastrada com este CNPJ.");
+      }
     }
 
     const hashedPassword = await bcrypt.hash(body.password, 10);
@@ -58,42 +88,12 @@ export const usersService = {
           role: "admin",
         },
       });
-
-      return {
-        id: newUser.id,
-        name: newUser.name,
-        phone: newUser.phone,
-        email: newUser.email,
-        cpf: newUser.cpf,
-        userType: newUser.user_type,
-        company: {
-          id: newCompany.id,
-          companyName: newCompany.company_name,
-          positionCompany: newCompany.position_company,
-          cnpj: newCompany.cnpj,
-          subscriptionPlan: newCompany.subscription_plan,
-        },
-      };
     }
 
     if (body.userType === "business") {
-      if (!body.companyName || !body.cnpj || !body.positionCompany) {
-        throw new BadRequestError(
-          "Campos companyName, cnpj e positionCompany são obrigatórios para usuários do tipo 'business'."
-        );
-      }
-
-      const existingCompany = await prisma.company.findUnique({
-        where: { cnpj: body.cnpj },
-      });
-
-      if (existingCompany) {
-        throw new BadRequestError("Empresa já cadastrada com este CNPJ.");
-      }
-
-      const newCompany = await prisma.company.create({
+      newCompany = await prisma.company.create({
         data: {
-          company_name: body.companyName,
+          company_name: body.companyName ?? body.name,
           cnpj: body.cnpj,
           position_company: body.positionCompany,
           subscription_plan: body.subscriptionPlan,
@@ -108,22 +108,6 @@ export const usersService = {
           role: "admin",
         },
       });
-
-      return {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        phone: newUser.phone,
-        cpf: newUser.cpf,
-        userType: newUser.user_type,
-        company: {
-          id: newCompany.id,
-          companyName: newCompany.company_name,
-          cnpj: newCompany.cnpj,
-          positionCompany: newCompany.position_company,
-          subscriptionPlan: newCompany.subscription_plan,
-        },
-      };
     }
 
     return {
@@ -133,19 +117,35 @@ export const usersService = {
       email: newUser.email,
       cpf: newUser.cpf,
       userType: newUser.user_type,
-      company: null,
+      company: newCompany
+        ? {
+            id: newCompany.id,
+            companyName: newCompany.company_name,
+            positionCompany: newCompany.position_company,
+            cnpj: newCompany.cnpj,
+            subscriptionPlan: newCompany.subscription_plan,
+          }
+        : null,
     };
   },
 
-  async getAllUsers() {
+  async getAllUsers(companyId?: string) {
     const users = await prisma.user.findMany({
       include: {
         company_user: {
           include: {
             company: true,
           },
+          ...(companyId && { where: { company_id: companyId } }),
         },
       },
+      ...(companyId && {
+        where: {
+          company_user: {
+            some: { company_id: companyId },
+          },
+        },
+      }),
     });
 
     return users.map((user) => {
@@ -206,92 +206,20 @@ export const usersService = {
     return userResponse;
   },
 
-  async updateUser(id: string, body: Partial<z.infer<typeof registerSchema>>) {
+  async updateUser(id: string, body: z.infer<typeof updateSchema>) {
     const user = await prisma.user.findUnique({
       where: { id },
-      include: {
-        company_user: {
-          include: {
-            company: true,
-          },
-        },
-      },
     });
 
     if (!user) {
-      throw new BadRequestError("Usuário não encontrado.");
-    }
-
-    const updatedData: any = {
-      name: body.name,
-      email: body.email,
-      phone: body.phone,
-      cpf: body.cpf,
-      user_type: body.userType,
-    };
-
-    if (body.password) {
-      updatedData.password_hash = await bcrypt.hash(body.password, 10);
-    }
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email: body.email },
-    });
-
-    if (existingUser && existingUser.id !== user.id) {
-      throw new BadRequestError(
-        "Este e-mail já está em uso por outro usuário."
-      );
+      throw new BadRequestError("Usuário não encontrado");
     }
 
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: updatedData,
-      include: {
-        company_user: {
-          include: {
-            company: true, // Inclua a empresa associada ao usuário
-          },
-        },
-      },
-    });
-
-    let updatedCompany = null;
-
-    if (body.userType === "business") {
-      if (!body.companyName || !body.cnpj || !body.positionCompany) {
-        throw new BadRequestError(
-          "Campos companyName, cnpj e positionCompany são obrigatórios para usuários do tipo 'business'."
-        );
-      }
-
-      if (user.company_user && user.company_user.length > 0) {
-        updatedCompany = await prisma.company.update({
-          where: { id: user.company_user[0].company.id },
-          data: {
-            company_name: body.companyName,
-            cnpj: body.cnpj,
-            position_company: body.positionCompany,
-          },
-        });
-      } else {
-        updatedCompany = await prisma.company.create({
-          data: {
-            company_name: body.companyName,
-            cnpj: body.cnpj,
-            position_company: body.positionCompany,
-            subscription_plan: body.subscriptionPlan as subscription_plan,
-            owner_id: updatedUser.id,
-          },
-        });
-      }
-    }
-
-    await prisma.company_user.create({
       data: {
-        user_id: updatedUser.id,
-        company_id: updatedCompany?.id ?? "",
-        role: "admin",
+        name: body.name ?? undefined,
+        phone: body.phone ?? undefined,
       },
     });
 
@@ -302,20 +230,12 @@ export const usersService = {
       phone: updatedUser.phone,
       userType: updatedUser.user_type,
       cpf: updatedUser.cpf,
-      company: updatedCompany
-        ? {
-            id: updatedCompany.id,
-            user_id: updatedCompany.id,
-            company_name: updatedCompany.company_name,
-            cnpj: updatedCompany.cnpj,
-            position_company: updatedCompany.position_company,
-            subscription_plan: updatedCompany.subscription_plan,
-          }
-        : null,
     };
   },
 
-  async addUserToCompany(body: z.infer<typeof addUserToCompanySchema> & { userId: string }) {
+  async addUserToCompany(
+    body: z.infer<typeof addUserToCompanySchema> & { userId: string }
+  ) {
     const { email, companyId, role, name, phone, cpf, userType, userId } = body;
 
     const company = await prisma.company.findUnique({
@@ -333,9 +253,11 @@ export const usersService = {
         role: "admin",
       },
     });
-  
+
     if (!requester) {
-      throw new UnauthorizedError("Apenas administradores podem adicionar usuários a esta empresa.");
+      throw new UnauthorizedError(
+        "Apenas administradores podem adicionar usuários a esta empresa."
+      );
     }
 
     let user = await prisma.user.findUnique({
@@ -364,8 +286,8 @@ export const usersService = {
 
       await sendEmail(
         email,
-        "Bem-vindo ao nosso app!",
-        `Sua senha temporária é: ${randomPassword}`
+        "Bem-vindo ao Obra Fácil - Você foi adicionado a uma empresa",
+        emailTemplate(company.company_name, randomPassword)
       );
     }
 
@@ -406,5 +328,65 @@ export const usersService = {
       },
       role,
     };
+  },
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string
+  ) {
+    console.log("🔐 Iniciando troca de senha...");
+    console.log("➡️ userId:", userId);
+    console.log("➡️ currentPassword recebido:", currentPassword);
+    console.log("➡️ newPassword recebido:", newPassword);
+
+    if (currentPassword === newPassword) {
+      console.log("❌ Senha nova igual à atual");
+      throw new BadRequestError("A nova senha deve ser diferente da atual");
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { password_hash: true },
+    });
+
+    if (!user) {
+      console.log("❌ Usuário não encontrado no banco");
+      throw new BadRequestError("Usuário não encontrado");
+    }
+
+    console.log("🔒 password_hash do banco:", user.password_hash);
+
+    const passwordMatch = await bcrypt.compare(
+      currentPassword,
+      user.password_hash
+    );
+    console.log("🔍 Resultado do bcrypt.compare:", passwordMatch);
+
+    if (!passwordMatch) {
+      console.log("❌ Senha atual incorreta");
+      throw new BadRequestError("Senha atual incorreta");
+    }
+
+    if (newPassword.length < 6) {
+      throw new BadRequestError(
+        "A nova senha deve ter pelo menos 6 caracteres"
+      );
+    }
+
+    if (!validatePassword(newPassword)) {
+      throw new BadRequestError(
+        "A senha deve conter pelo menos 6 caracteres, incluindo maiúsculas, minúsculas e caracteres especiais"
+      );
+    }
+
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password_hash: newPasswordHash },
+    });
+
+    console.log("✅ Senha atualizada com sucesso!");
+    return { success: true };
   },
 };

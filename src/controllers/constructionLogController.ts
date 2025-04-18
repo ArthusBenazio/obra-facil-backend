@@ -2,10 +2,11 @@ import { User } from "../entities/user";
 import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
 import { authMiddleware, TokenPayload } from "../middlewares/authMiddleware";
 import {
-  constructionLogResponseSchema,
+  ConstructionLogResponseSchema,
   constructionLogSchema,
   getConstructionLogByIdQuerySchema,
   getConstructionLogQuerySchema,
+  getConstructionLogResponseSchema,
   updateLogSchema,
 } from "../schemas/constrructionLogSchema";
 import { ConstructionLogService } from "../services/constructionLogService";
@@ -19,7 +20,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
       schema: {
         body: constructionLogSchema,
         response: {
-          201: constructionLogResponseSchema,
+          201: ConstructionLogResponseSchema,
         },
         tags: ["Diário de Obra"],
         description: "Cria um novo diário de obra",
@@ -50,7 +51,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
           equipment_usage: body.equipment_usage,
         });
       const constructionLogResponse =
-        constructionLogResponseSchema.parse(newConstructionLog);
+        ConstructionLogResponseSchema.parse(newConstructionLog);
       return reply.status(201).send(constructionLogResponse);
     }
   );
@@ -62,7 +63,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
       schema: {
         querystring: getConstructionLogQuerySchema,
         response: {
-          200: constructionLogResponseSchema.array(),
+          200: getConstructionLogResponseSchema.array(),
         },
         tags: ["Diário de Obra"],
         description: "Retorna os diários de uma obra específica",
@@ -70,7 +71,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
     },
     async (request, reply) => {
       const user = request.user as TokenPayload;
-      const { project_id, date } = request.query as { project_id: string; date?: Date };
+      const { project_id, start_date, end_date } = request.query;
 
       if (!user) {
         throw new UnauthorizedError("Usuário não autenticado.");
@@ -84,13 +85,15 @@ export async function constructionLogController(server: FastifyTypedInstance) {
         await ConstructionLogService.getAllConstructionLogs(
           project_id,
           user.userId,
-          date ? new Date(date) : undefined
+          start_date,
+          end_date
         );
 
-      const constructionLogResponse = constructionLogResponseSchema
-        .array()
-        .parse(constructionLogs);
-      return reply.status(200).send(constructionLogResponse);
+        const validatedLogs = constructionLogs.map(log => 
+          getConstructionLogResponseSchema.parse(log)
+        );
+    
+        return reply.status(200).send(validatedLogs);
     }
   );
 
@@ -101,7 +104,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
       schema: {
         querystring: getConstructionLogByIdQuerySchema,
         response: {
-          200: constructionLogResponseSchema,
+          200: ConstructionLogResponseSchema,
         },
         tags: ["Diário de Obra"],
         description: "Retorna um diário de obra",
@@ -114,7 +117,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
       const constructionLog =
         await ConstructionLogService.getConstructionLogById(id, date ? new Date(date) : undefined);
       const constructionLogResponse =
-        constructionLogResponseSchema.parse(constructionLog);
+        ConstructionLogResponseSchema.parse(constructionLog);
       return reply.status(200).send(constructionLogResponse);
     }
   );
@@ -126,7 +129,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
       schema: {
         body: updateLogSchema,
         response: {
-          200: constructionLogResponseSchema,
+          200: ConstructionLogResponseSchema,
         },
         tags: ["Diário de Obra"],
         description: "Atualiza um diário de obra",
@@ -146,7 +149,7 @@ export async function constructionLogController(server: FastifyTypedInstance) {
           ...body,
         });
 
-      const constructionLogResponse = constructionLogResponseSchema.parse(
+      const constructionLogResponse = ConstructionLogResponseSchema.parse(
         updatedConstructionLog
       );
       return reply.status(200).send(constructionLogResponse);
