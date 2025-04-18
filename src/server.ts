@@ -50,7 +50,6 @@ server.register(fastifySwagger, {
           type: "string",
           enum: [
             "nao_iniciado",
-            "iniciando",
             "em_andamento",
             "concluido",
             "cancelado",
@@ -92,5 +91,5 @@ server.listen({ port: process.env.PORT ? Number(process.env.PORT) : 5000, host: 
     console.log(err);
     process.exit(1);
   }
-  console.log(`Servidor rodando em ${address}`);
+  console.log("Servidor rodando");
 });

@@ -18,7 +18,6 @@ export const projectService = {
     expected_end_date: Date;
     status:
       | "nao_iniciado"
-      | "iniciando"
       | "em_andamento"
       | "concluido"
       | "cancelado"
@@ -135,7 +134,6 @@ export const projectService = {
       expected_end_date: Date;
       status:
         | "nao_iniciado"
-        | "iniciando"
         | "em_andamento"
         | "concluido"
         | "cancelado"
@@ -166,7 +164,6 @@ export const projectService = {
       project.expected_end_date,
       project.status as
         | "nao_iniciado"
-        | "iniciando"
         | "em_andamento"
         | "concluido"
         | "cancelado"
