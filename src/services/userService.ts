@@ -335,13 +335,7 @@ export const usersService = {
     currentPassword: string,
     newPassword: string
   ) {
-    console.log("🔐 Iniciando troca de senha...");
-    console.log("➡️ userId:", userId);
-    console.log("➡️ currentPassword recebido:", currentPassword);
-    console.log("➡️ newPassword recebido:", newPassword);
-
     if (currentPassword === newPassword) {
-      console.log("❌ Senha nova igual à atual");
       throw new BadRequestError("A nova senha deve ser diferente da atual");
     }
 
@@ -351,20 +345,15 @@ export const usersService = {
     });
 
     if (!user) {
-      console.log("❌ Usuário não encontrado no banco");
       throw new BadRequestError("Usuário não encontrado");
     }
-
-    console.log("🔒 password_hash do banco:", user.password_hash);
 
     const passwordMatch = await bcrypt.compare(
       currentPassword,
       user.password_hash
     );
-    console.log("🔍 Resultado do bcrypt.compare:", passwordMatch);
 
     if (!passwordMatch) {
-      console.log("❌ Senha atual incorreta");
       throw new BadRequestError("Senha atual incorreta");
     }
 
@@ -386,7 +375,6 @@ export const usersService = {
       data: { password_hash: newPasswordHash },
     });
 
-    console.log("✅ Senha atualizada com sucesso!");
     return { success: true };
   },
 };

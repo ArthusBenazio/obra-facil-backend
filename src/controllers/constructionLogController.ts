@@ -112,7 +112,6 @@ export async function constructionLogController(server: FastifyTypedInstance) {
     },
     async (request, reply) => {
       const { id } = request.params as { id: string };
-      console.log("id", id);
       const { date } = request.query as { date?: Date };
       const constructionLog =
         await ConstructionLogService.getConstructionLogById(id, date ? new Date(date) : undefined);
