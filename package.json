@@ -1,7 +1,7 @@
 {
   "name": "obra-facil-back",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/server.js",
   "engines": {
     "node": "20.x"
   },
@@ -12,7 +12,7 @@
     "dev": "nodemon --exec tsx src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "prisma:migrate": "npx prisma migrate dev --name init",
+    "prisma:migrate": "npx prisma migrate deploy",
     "prisma:generate": "npx prisma generate",
     "prisma": "npm run prisma:migrate && npm run prisma:generate"
   },
