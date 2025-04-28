@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "lib": ["ES5", "ES6", "ES2018"],                // Ou uma versão mais recente do ECMAScript
-    "module": "commonjs",            // Especificando que o módulo é ESM
+    "module": "ESNext",            // Especificando que o módulo é ESM
     "moduleResolution": "node",    // Usar a resolução de módulo do Node.js
     "esModuleInterop": true,       // Permitir interoperabilidade com módulos CommonJS
     "skipLibCheck": true,          // Ignorar verificação de tipo de bibliotecas
