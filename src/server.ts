@@ -1,6 +1,6 @@
 import fastify from "fastify";
 import fastifyJWT from "fastify-jwt";
-import { errorHandler } from "./middlewares/errorHandler";
+import { errorHandler } from "./middlewares/errorHandler.js";
 import cors from "@fastify/cors";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
