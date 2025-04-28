@@ -11,8 +11,6 @@ export async function sendEmail(to: string, subject: string, html: string) {
       html,
     });
 
-    console.log("Resposta da API do Resend:", response);
-
     return { success: true, data: response };
   } catch (error) {
     console.error('Erro ao enviar e-mail:', error);

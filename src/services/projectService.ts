@@ -27,11 +27,8 @@ export const projectService = {
     client: string;
     company_id: string;
   }): Promise<Project> {
-    console.log("Dados recebidos no serviço para criar projeto:", data); // Depuração
 
     const newProject = await prisma.project.create({ data });
-
-    console.log("Projeto criado no banco de dados:", newProject); // Depuração
 
     return newProject;
   },
@@ -40,17 +37,12 @@ export const projectService = {
     companyId: string,
     statusList?: project_status[]
   ): Promise<Projects[]> {
-    console.log("🔎 Buscando todos os projetos...");
-    console.log("➡️ companyId:", companyId);
-    console.log("➡️ statusList:", statusList);
     const projects = await prisma.project.findMany({
       where: {
         company_id: companyId,
         ...(statusList ? { status: { in: statusList } } : {}),
       },
     });
-
-    console.log("➡️ Projetos encontrados:", projects);
 
     return projects.map((project) => {
       if (

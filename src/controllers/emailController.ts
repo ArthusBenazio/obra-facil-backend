@@ -19,11 +19,7 @@ export async function emailController(fastify: FastifyTypedInstance) {
     async (request, reply) => {
       const { to, subject, html } = emailSchema.parse(request.body);
 
-      console.log("Recebendo solicitação de envio de e-mail:", { to, subject, html });
-
       const result = await sendEmail(to, subject, html);
-
-      console.log("Resultado do envio de e-mail:", result);
 
       if (result.success) {
         return reply.status(200).send({ success: true, message: "Sucesso, email enviado!" });
