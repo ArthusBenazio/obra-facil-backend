@@ -1,6 +1,6 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
-import { ApiError } from '../helpers/api-erros';
+import { ApiError } from '../helpers/api-erros.js';
 
 export const errorHandler = (
   error: Error & Partial<ApiError>,

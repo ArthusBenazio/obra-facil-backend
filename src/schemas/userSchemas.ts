@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PASSWORD_REGEX, PASSWORD_REQUIREMENTS } from "../utils/validators";
+import { PASSWORD_REGEX, PASSWORD_REQUIREMENTS } from "../utils/validators.js";
 
 const baseSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),

@@ -1,23 +1,17 @@
 import { z } from "zod";
-import { UnauthorizedError } from "../helpers/api-erros";
-import { authMiddleware, TokenPayload } from "../middlewares/authMiddleware";
+import { UnauthorizedError } from "../helpers/api-erros.js";
+import { authMiddleware, TokenPayload } from "../middlewares/authMiddleware.js";
 import {
   ProjectResponse,
   projectResponseSchema,
   projectSchema,
   querystringSchema,
-} from "../schemas/projectSchemas";
-import { projectService } from "../services/projectService";
-import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
-import { FastifyRequest } from "fastify";
-import { project_status } from "@prisma/client";
+} from "../schemas/projectSchemas.js";
+import { projectService } from "../services/projectService.js";
+import { FastifyTypedInstance } from "../types/fastifyTypedInstance.js";
 
 interface User {
   companyIds: string;
-}
-
-interface CompanyQuery {
-  companyId?: string;
 }
 
 export function projectController(server: FastifyTypedInstance) {

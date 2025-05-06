@@ -1,8 +1,7 @@
 import { employee_status } from "@prisma/client";
-import { Employee } from "../entities/employee";
-import { User } from "../entities/user";
+import { Employee } from "../entities/employee.js";
 import { prisma } from "../lib/prisma";
-import { formatDate } from "../utils/formatedDate";
+import { formatDate } from "../utils/formatedDate.js";
 
 type ReportItem = {
   name: string;

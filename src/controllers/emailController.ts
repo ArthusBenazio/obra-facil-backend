@@ -1,7 +1,7 @@
-import { sendEmail } from "../services/emailService";
-import { authMiddleware } from "../middlewares/authMiddleware";
-import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
-import { emailSchema } from "../schemas/emailSchema";
+import { sendEmail } from "../services/emailService.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
+import { FastifyTypedInstance } from "../types/fastifyTypedInstance.js";
+import { emailSchema } from "../schemas/emailSchema.js";
 
 export async function emailController(fastify: FastifyTypedInstance) {
   fastify.post(

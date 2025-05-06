@@ -1,9 +1,9 @@
-import { User } from "../entities/user";
-import { UnauthorizedError } from "../helpers/api-erros";
-import { authMiddleware } from "../middlewares/authMiddleware";
-import { equipmentResponseSchema, equipmentSchema } from "../schemas/equipmentSchema";
-import { equipmentService } from "../services/equipmentService";
-import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
+import { User } from "../entities/user.js";
+import { UnauthorizedError } from "../helpers/api-erros.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
+import { equipmentResponseSchema, equipmentSchema } from "../schemas/equipmentSchema.js";
+import { equipmentService } from "../services/equipmentService.js";
+import { FastifyTypedInstance } from "../types/fastifyTypedInstance.js";
 
 export async function equipmentController(server: FastifyTypedInstance) {
   server.post(

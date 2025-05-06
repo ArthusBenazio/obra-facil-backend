@@ -1,6 +1,6 @@
-import { authService } from "../services/authServices";
-import { LoginResponseSchema, loginSchema } from "../schemas/authSchemas";
-import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
+import { authService } from "../services/authServices.js";
+import { LoginResponseSchema, loginSchema } from "../schemas/authSchemas.js";
+import { FastifyTypedInstance } from "../types/fastifyTypedInstance.js";
 
 export async function authController(server: FastifyTypedInstance) {
   server.post(
