@@ -1,10 +1,10 @@
 import fastify from "fastify";
 import fastifyJWT from "fastify-jwt";
-import { errorHandler } from "./middlewares/errorHandler.js";
+import { errorHandler } from "./middlewares/errorHandler";
 import cors from "@fastify/cors";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
-import routes from "./routes.js";
+import routes from "./routes";
 import {
   jsonSchemaTransform,
   serializerCompiler,
