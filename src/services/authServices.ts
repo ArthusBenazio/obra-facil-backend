@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma.js";
 import { z } from "zod";
 import { FastifyInstance } from "fastify";
 import { BadRequestError } from "../helpers/api-erros.js";
