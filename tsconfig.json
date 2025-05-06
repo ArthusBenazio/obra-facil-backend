@@ -1,16 +1,19 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "lib": ["ES5", "ES6", "ES2018"],                // Ou uma versão mais recente do ECMAScript
+    "lib": ["ES2020"],                // Ou uma versão mais recente do ECMAScript
     "module": "ESNext",            // Especificando que o módulo é ESM
     "moduleResolution": "node",    // Usar a resolução de módulo do Node.js
     "esModuleInterop": true,       // Permitir interoperabilidade com módulos CommonJS
     "skipLibCheck": true,          // Ignorar verificação de tipo de bibliotecas
     "forceConsistentCasingInFileNames": true, // Garantir consistência na maiúscula/minúscula de arquivos
     "outDir": "./dist",            // Saída de arquivos compilados
-    "allowJs": true,               // Permitir arquivos .js
     "resolveJsonModule": true,     // Permitir importação de arquivos JSON
     "strict": true,
+    "baseUrl": "./src",              // Necessário para tsc-alias funcionar (se você usa paths personalizados)
+    "paths": {
+      "*": ["*"]                     // Mantém compatibilidade genérica com importações relativas
+    }
   },
   "include": ["src/**/*"],         // Incluir todos os arquivos no diretório 'src'
   "exclude": ["node_modules", "./dist"],      // Excluir 'node_modules'
