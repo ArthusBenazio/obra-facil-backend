@@ -1,6 +1,6 @@
 import { employee_status } from "@prisma/client";
 import { Employee } from "../entities/employee.js";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma.js";
 import { formatDate } from "../utils/formatedDate.js";
 
 type ReportItem = {

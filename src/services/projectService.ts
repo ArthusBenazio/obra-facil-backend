@@ -1,7 +1,7 @@
 import { project_status } from "@prisma/client";
 import { Projects } from "../entities/project.js";
 import { BadRequestError, UnauthorizedError } from "../helpers/api-erros.js";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma.js";
 
 interface Project {
   company_id: string;

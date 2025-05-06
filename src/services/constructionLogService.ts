@@ -1,4 +1,4 @@
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma.js";
 import { ConstructionLog } from "../entities/constructionLog.js";
 import { BadRequestError, UnauthorizedError } from "../helpers/api-erros.js";
 import { attachment_type, Climate, Condition, Period } from "@prisma/client";
