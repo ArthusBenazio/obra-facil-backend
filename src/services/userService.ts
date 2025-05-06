@@ -1,22 +1,22 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../lib/prisma";
 import { z } from "zod";
-import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
-import { UserResponse } from "../types/userTypes";
+import { BadRequestError, UnauthorizedError } from "../helpers/api-erros.js";
+import { UserResponse } from "../types/userTypes.js";
 import {
   addUserToCompanySchema,
   registerSchema,
   updateSchema,
-} from "../schemas/userSchemas";
+} from "../schemas/userSchemas.js";
 import { user_role } from "@prisma/client";
-import { generateRandomPassword } from "../utils/generateRandomPassword";
-import { sendEmail } from "./emailService";
-import { emailTemplate } from "../utils/emailTemplate";
+import { generateRandomPassword } from "../utils/generateRandomPassword.js";
+import { sendEmail } from "./emailService.js";
+import { emailTemplate } from "../utils/emailTemplate.js";
 import {
   PASSWORD_REGEX,
   PASSWORD_REQUIREMENTS,
   validatePassword,
-} from "../utils/validators";
+} from "../utils/validators.js";
 
 export const usersService = {
   async registerUser(body: z.infer<typeof registerSchema>) {

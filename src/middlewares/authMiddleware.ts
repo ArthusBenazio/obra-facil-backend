@@ -1,4 +1,4 @@
-import { UnauthorizedError } from "../helpers/api-erros";
+import { UnauthorizedError } from "../helpers/api-erros.js";
 import { FastifyReply, FastifyRequest } from "fastify";
 
 export interface TokenPayload {

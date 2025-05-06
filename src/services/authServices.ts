@@ -2,10 +2,10 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../lib/prisma";
 import { z } from "zod";
 import { FastifyInstance } from "fastify";
-import { BadRequestError } from "../helpers/api-erros";
-import { loginSchema } from "../schemas/authSchemas";
-import { CompanyInfo } from "../types/companyInfo";
-import { authResponse } from "../types/authTypes";
+import { BadRequestError } from "../helpers/api-erros.js";
+import { loginSchema } from "../schemas/authSchemas.js";
+import { CompanyInfo } from "../types/companyInfo.js";
+import { authResponse } from "../types/authTypes.js";
 
 export const authService = {
   async loginUser(body: z.infer<typeof loginSchema>) {

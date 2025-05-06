@@ -1,6 +1,5 @@
-import { get } from "http";
 import { prisma } from "../lib/prisma";
-import { User } from "../entities/user";
+import { User } from "../entities/user.js";
 
 export const equipmentService = {
 

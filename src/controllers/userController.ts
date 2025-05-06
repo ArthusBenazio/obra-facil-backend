@@ -1,6 +1,6 @@
-import { usersService } from "../services/userService";
-import { UserResponse } from "../types/userTypes";
-import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
+import { usersService } from "../services/userService.js";
+import { UserResponse } from "../types/userTypes.js";
+import { BadRequestError } from "../helpers/api-erros.js";
 import {
   addUserToCompanyResponseSchema,
   addUserToCompanySchema,
@@ -11,11 +11,11 @@ import {
   updateSchema,
   updateSchemaRespose,
   userResponseSchema,
-} from "../schemas/userSchemas";
+} from "../schemas/userSchemas.js";
 import { z } from "zod";
-import { authMiddleware, TokenPayload } from "../middlewares/authMiddleware";
+import { authMiddleware, TokenPayload } from "../middlewares/authMiddleware.js";
 import { FastifyRequest } from "fastify";
-import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
+import { FastifyTypedInstance } from "../types/fastifyTypedInstance.js";
 
 interface ProfileParams {
   id: string;

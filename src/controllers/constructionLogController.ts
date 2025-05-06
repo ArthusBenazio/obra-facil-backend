@@ -1,6 +1,6 @@
-import { User } from "../entities/user";
-import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
-import { authMiddleware, TokenPayload } from "../middlewares/authMiddleware";
+import { User } from "../entities/user.js";
+import { BadRequestError, UnauthorizedError } from "../helpers/api-erros.js";
+import { authMiddleware, TokenPayload } from "../middlewares/authMiddleware.js";
 import {
   ConstructionLogResponseSchema,
   constructionLogSchema,
@@ -8,9 +8,9 @@ import {
   getConstructionLogQuerySchema,
   getConstructionLogResponseSchema,
   updateLogSchema,
-} from "../schemas/constrructionLogSchema";
-import { ConstructionLogService } from "../services/constructionLogService";
-import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
+} from "../schemas/constrructionLogSchema.js";
+import { ConstructionLogService } from "../services/constructionLogService.js";
+import { FastifyTypedInstance } from "../types/fastifyTypedInstance.js";
 
 export async function constructionLogController(server: FastifyTypedInstance) {
   server.post(

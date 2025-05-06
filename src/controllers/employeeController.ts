@@ -1,7 +1,7 @@
 import { employee_status } from "@prisma/client";
-import { User } from "../entities/user";
-import { UnauthorizedError } from "../helpers/api-erros";
-import { authMiddleware } from "../middlewares/authMiddleware";
+import { User } from "../entities/user.js";
+import { UnauthorizedError } from "../helpers/api-erros.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 import {
   deleteEmployeeResponseSchema,
   employeeResponseSchema,
@@ -9,9 +9,9 @@ import {
   querystringGetAll,
   registerEmployeeSchema,
   reportHoursWorkedResponseSchema,
-} from "../schemas/employeeSchema";
-import { employeeService } from "../services/employeeService";
-import { FastifyTypedInstance } from "../types/fastifyTypedInstance";
+} from "../schemas/employeeSchema.js";
+import { employeeService } from "../services/employeeService.js";
+import { FastifyTypedInstance } from "../types/fastifyTypedInstance.js";
 
 export async function employeeController(server: FastifyTypedInstance) {
   server.post(

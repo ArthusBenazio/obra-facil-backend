@@ -1,5 +1,5 @@
 import { user_type } from "@prisma/client";
-import { CompanyInfo } from "./companyInfo";
+import { CompanyInfo } from "./companyInfo.js";
 
 export type authResponse = {
   id: string;

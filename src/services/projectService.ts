@@ -1,6 +1,6 @@
 import { project_status } from "@prisma/client";
-import { Projects } from "../entities/project";
-import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
+import { Projects } from "../entities/project.js";
+import { BadRequestError, UnauthorizedError } from "../helpers/api-erros.js";
 import { prisma } from "../lib/prisma";
 
 interface Project {

@@ -1,6 +1,6 @@
 import { prisma } from "../lib/prisma";
-import { ConstructionLog } from "../entities/constructionLog";
-import { BadRequestError, UnauthorizedError } from "../helpers/api-erros";
+import { ConstructionLog } from "../entities/constructionLog.js";
+import { BadRequestError, UnauthorizedError } from "../helpers/api-erros.js";
 import { attachment_type, Climate, Condition, Period } from "@prisma/client";
 
 export const ConstructionLogService = {
